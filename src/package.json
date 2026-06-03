@@ -1,0 +1,78 @@
+{
+  "name": "nero-terminal",
+  "version": "0.1.0",
+  "description": "Nero - terminal emulator built with Electron (node-pty + xterm.js via nero-terminal-lib)",
+  "main": "main/main.js",
+  "scripts": {
+    "submodule:update": "git submodule update --init --recursive",
+    "preinstall": "git submodule update --init --recursive",
+    "start": "env -u ELECTRON_RUN_AS_NODE electron .",
+    "prebuild": "git rev-parse --short HEAD > .git-commit",
+    "build": "node scripts/build.js release win",
+    "build:debug": "node scripts/build.js debug win",
+    "build:mac": "node scripts/build.js release mac",
+    "build:mac:debug": "node scripts/build.js debug mac",
+    "test": "node scripts/smoke-check.js",
+    "docs": "node scripts/docs.js",
+    "docs:single": "jsdoc -c jsdoc.json",
+    "docs:setup": "npm --prefix nero_modules/jsdoc-theme install --omit=dev"
+  },
+  "keywords": [
+    "terminal",
+    "xterm",
+    "node-pty",
+    "electron"
+  ],
+  "author": "Informanellica",
+  "license": "MIT",
+  "dependencies": {
+    "@xterm/addon-canvas": "^0.7.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "bootstrap": "^5.3.8",
+    "bootstrap-icons": "^1.13.1",
+    "node-pty": "^1.1.0",
+    "ssh2": "^1.17.0"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^26.7.0",
+    "jsdoc": "^4.0.5"
+  },
+  "build": {
+    "appId": "com.nero.terminal",
+    "productName": "nero-terminal",
+    "asar": false,
+    "npmRebuild": false,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main/**/*",
+      "renderer/**/*",
+      "nero_modules/**/*",
+      "node_modules/**/*",
+      "assets/**/*",
+      "package.json",
+      "build-info.json",
+      ".git-commit"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico",
+      "signtoolOptions": {
+        "signingHashAlgorithms": [
+          "sha256"
+        ],
+        "rfc3161TimeStampServer": "http://timestamp.digicert.com"
+      }
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico"
+    },
+    "icon": "assets/icon.ico"
+  }
+}

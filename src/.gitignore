@@ -1,0 +1,14 @@
+node_modules/
+**/node_modules/
+dist/
+dist-*/
+build-info.json
+*.log
+.git-commit
+.DS_Store
+Thumbs.db
+
+/aaa
+
+# generated JSDoc lives in the release submodule
+/docs

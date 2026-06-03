@@ -1,0 +1,102 @@
+/* Software Album site - Informanellica */
+
+.card-img-top {
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    object-position: top left;
+    background: #f5f5f5;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.075);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    transition: transform 0.15s ease;
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .1) !important;
+}
+
+/* 詳細ページ・マニュアル共通 */
+.doc-body {
+    max-width: 880px;
+    margin: 0 auto;
+}
+
+.doc-body img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    margin: 1rem 0;
+}
+
+.doc-body h2 {
+    margin-top: 2.5rem;
+    padding-bottom: .3rem;
+    border-bottom: 1px solid #eaecef;
+}
+
+.doc-body h3 {
+    margin-top: 2rem;
+}
+
+.doc-body code {
+    background: #f6f8fa;
+    padding: .1em .4em;
+    border-radius: 4px;
+    color: #d63384;
+}
+
+.doc-body pre {
+    background: #f6f8fa;
+    padding: .75rem 1rem;
+    border-radius: 6px;
+    overflow-x: auto;
+}
+
+.doc-body kbd {
+    background: #fafbfc;
+    color: #24292e;
+    border: 1px solid #d1d5da;
+    border-bottom-width: 2px;
+    border-radius: 3px;
+    padding: 2px 5px;
+    font-size: .85em;
+}
+
+/* === 共有ボタン (waka と同型) === */
+.share-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .6em;
+    flex-wrap: wrap;
+}
+.share-label {
+    color: #6c757d;
+    font-size: .9em;
+    margin-right: .4em;
+}
+.share-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.4em;
+    height: 2.4em;
+    border-radius: 50%;
+    text-decoration: none;
+    transition: transform .12s, box-shadow .12s;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    user-select: none;
+}
+.share-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, .18);
+}
+.share-btn svg { display: block; }
+.share-x     { background: #000;     color: #fff; }
+.share-fb    { background: #1877f2;  color: #fff; }
+.share-line  { background: #06c755;  color: #fff; }
+.share-email { background: #5d5346;  color: #fff; }
+.share-copy  { background: #6c757d;  color: #fff; }
+.share-copy.copied { background: #198754; }
