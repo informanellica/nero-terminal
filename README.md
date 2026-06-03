@@ -19,6 +19,7 @@ PuTTY / Tera Term 風の SSH・ローカルシェル ターミナル。
 ## 動作環境
 
 - Windows 11 (64-bit)
+- macOS (Apple Silicon / arm64)
 
 ## このリポジトリの構成
 

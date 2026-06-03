@@ -1,6 +1,6 @@
 {
   "name": "nero-terminal",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Nero - terminal emulator built with Electron (node-pty + xterm.js via nero-terminal-lib)",
   "main": "main/main.js",
   "scripts": {
@@ -72,6 +72,17 @@
       "allowToChangeInstallationDirectory": true,
       "installerIcon": "assets/icon.ico",
       "uninstallerIcon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "assets/icon.png",
+      "category": "public.app-category.developer-tools"
+    },
+    "dmg": {
+      "icon": "assets/icon.png"
     },
     "icon": "assets/icon.ico"
   }
