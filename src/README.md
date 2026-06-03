@@ -47,11 +47,13 @@ npm run build:mac:debug # macOS デバッグ版   → dist-mac-debug/ (署名・
 ### macOS の署名・公証
 
 リリース版 (`build:mac`) は Developer ID で署名し、Apple の公証 (notarization) まで行います。
-公証には App Store Connect API キーの環境変数が必要です。ローカルでは `~/.env.notary` にまとめておき、
-ビルド前に読み込みます。
+公証には App Store Connect API キー (`APPLE_API_KEY` / `APPLE_API_KEY_ID` / `APPLE_API_ISSUER`)
+を環境変数で設定してからビルドします。
 
 ```sh
-source ~/.env.notary    # APPLE_API_KEY / APPLE_API_KEY_ID / APPLE_API_ISSUER を export
+export APPLE_API_KEY=/path/to/AuthKey.p8
+export APPLE_API_KEY_ID=XXXXXXXXXX
+export APPLE_API_ISSUER=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 npm run build:mac
 ```
 
