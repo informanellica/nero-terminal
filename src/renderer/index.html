@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <title>nero-terminal</title>
+  <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="../node_modules/bootstrap-icons/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Title bar: draggable, with native min/max/close overlaid to the right -->
+  <div id="titlebar">
+    <i class="bi bi-terminal-fill text-success"></i>
+    <span class="tb-name">nero-terminal</span>
+    <span id="tb-session" class="tb-session"></span>
+    <span class="tb-spacer"></span>
+    <select id="lang" class="tb-lang" title="Language" data-i18n-title="titlebar.language"></select>
+    <button id="btn-theme" class="tb-btn" title="Toggle light / dark" data-i18n-title="titlebar.theme"><i class="bi bi-moon-stars"></i></button>
+    <button id="btn-settings" class="tb-btn" title="Session settings" data-i18n-title="titlebar.settings"><i class="bi bi-gear"></i></button>
+  </div>
+
+  <!-- The terminal: always present (created once), so it always renders -->
+  <div id="terminal"></div>
+
+  <!-- Session configuration: a dialog over the terminal (Tera Term style) -->
+  <div id="settings-overlay" class="d-none">
+    <div class="settings-dialog card shadow-lg">
+      <div class="card-header d-flex align-items-center py-2">
+        <i class="bi bi-hdd-network me-2"></i><span class="fw-semibold" data-i18n="dialog.title">Session configuration</span>
+        <button id="btn-close-settings" type="button" class="btn-close ms-auto" title="Close" data-i18n-title="dialog.close"></button>
+      </div>
+
+      <div class="settings-body">
+        <nav class="cfg-nav flex-shrink-0 d-flex flex-column">
+          <ul class="cat-list list-unstyled mb-2">
+            <li class="cat active" data-cat="session" data-i18n="cat.session"><i class="bi bi-hdd-network me-1"></i>Session</li>
+            <li class="cat" data-cat="terminal" data-i18n="cat.terminal"><i class="bi bi-card-text me-1"></i>Terminal</li>
+            <li class="cat" data-cat="window" data-i18n="cat.window"><i class="bi bi-window me-1"></i>Window</li>
+            <li class="cat sub" data-cat="appearance" data-i18n="cat.appearance">Appearance</li>
+            <li class="cat sub" data-cat="colours" data-i18n="cat.colours">Colours</li>
+            <li class="cat" data-cat="connection" data-i18n="cat.connection"><i class="bi bi-diagram-3 me-1"></i>Connection</li>
+            <li class="cat sub" data-cat="data" data-i18n="cat.data">Data</li>
+            <li class="cat sub" data-cat="ssh" data-i18n="cat.ssh">SSH</li>
+          </ul>
+          <div class="mt-auto">
+            <label class="form-label small text-secondary mb-1" data-i18n="saved.label">Saved Sessions</label>
+            <select id="profile-list" class="form-select form-select-sm mb-1" size="5"></select>
+            <input id="profile-name" class="form-control form-control-sm mb-1" placeholder="Session name" data-i18n-placeholder="saved.name_ph" autocomplete="off" />
+            <div class="btn-group btn-group-sm w-100">
+              <button id="btn-load" type="button" class="btn btn-outline-secondary" title="Load" data-i18n-title="saved.load"><i class="bi bi-box-arrow-in-down"></i></button>
+              <button id="btn-save" type="button" class="btn btn-outline-secondary" title="Save" data-i18n-title="saved.save"><i class="bi bi-floppy"></i></button>
+              <button id="btn-delete" type="button" class="btn btn-outline-danger" title="Delete" data-i18n-title="saved.delete"><i class="bi bi-trash"></i></button>
+            </div>
+          </div>
+        </nav>
+
+        <section class="cfg-panels">
+          <div class="cat-panel" data-cat="session">
+            <h6 class="panel-title" data-i18n="session.title">Basic options for your nero-terminal session</h6>
+            <fieldset class="mb-3">
+              <legend class="legend" data-i18n="session.conn_type">Connection type</legend>
+              <div class="d-flex gap-3">
+                <div class="form-check"><input class="form-check-input" type="radio" name="ctype" id="ctype-ssh" value="ssh" checked />
+                  <label class="form-check-label" for="ctype-ssh" data-i18n="session.ssh">SSH</label></div>
+                <div class="form-check"><input class="form-check-input" type="radio" name="ctype" id="ctype-local" value="local" />
+                  <label class="form-check-label" for="ctype-local" data-i18n="session.local">Local shell</label></div>
+              </div>
+            </fieldset>
+            <div class="form-check form-switch mb-3">
+              <input class="form-check-input" type="checkbox" id="auto-open-default" />
+              <label class="form-check-label small" for="auto-open-default" data-i18n="session.auto_open">Open the default local terminal at startup (skip this dialog)</label>
+            </div>
+            <div data-when="ssh">
+              <div class="row g-2 mb-2 align-items-center">
+                <label class="col-sm-4 col-form-label col-form-label-sm" for="host" data-i18n="session.host">Host Name (or IP address)</label>
+                <div class="col-sm-5"><input id="host" class="form-control form-control-sm" placeholder="example.com" data-i18n-placeholder="session.host_ph" /></div>
+                <label class="col-sm-1 col-form-label col-form-label-sm text-sm-end" for="port" data-i18n="session.port">Port</label>
+                <div class="col-sm-2"><input id="port" type="number" min="1" max="65535" value="22" class="form-control form-control-sm" /></div>
+              </div>
+            </div>
+            <div data-when="local" hidden>
+              <div class="row g-2 mb-2 align-items-center">
+                <label class="col-sm-4 col-form-label col-form-label-sm" for="shell" data-i18n="session.shell">Shell</label>
+                <div class="col-sm-8"><select id="shell" class="form-select form-select-sm"></select></div>
+              </div>
+              <div class="row g-2 mb-2 align-items-center" id="custom-row" hidden>
+                <label class="col-sm-4 col-form-label col-form-label-sm" for="custom-shell" data-i18n="session.command">Command</label>
+                <div class="col-sm-8"><input id="custom-shell" class="form-control form-control-sm" placeholder="e.g. C:\\msys64\\usr\\bin\\bash.exe" /></div>
+              </div>
+              <div class="row g-2 mb-2 align-items-center">
+                <label class="col-sm-4 col-form-label col-form-label-sm" for="args" data-i18n="session.args">Arguments</label>
+                <div class="col-sm-8"><input id="args" class="form-control form-control-sm" placeholder="(optional)" data-i18n-placeholder="session.args_ph" /></div>
+              </div>
+              <div class="row g-2 align-items-center">
+                <label class="col-sm-4 col-form-label col-form-label-sm" for="cwd" data-i18n="session.cwd">Start directory</label>
+                <div class="col-sm-8"><div class="input-group input-group-sm">
+                  <input id="cwd" class="form-control" placeholder="(home directory)" data-i18n-placeholder="session.cwd_ph" />
+                  <button id="btn-browse" type="button" class="btn btn-outline-secondary"><i class="bi bi-folder2-open"></i></button>
+                </div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cat-panel" data-cat="terminal" hidden>
+            <h6 class="panel-title" data-i18n="terminal.title">Options controlling the terminal emulation</h6>
+            <div class="row g-2 align-items-center">
+              <label class="col-sm-4 col-form-label col-form-label-sm" for="scrollback" data-i18n="terminal.scrollback">Lines of scrollback</label>
+              <div class="col-sm-3"><input id="scrollback" type="number" min="0" max="200000" value="1000" class="form-control form-control-sm" /></div>
+            </div>
+          </div>
+
+          <div class="cat-panel" data-cat="window" hidden>
+            <h6 class="panel-title" data-i18n="window.title">Options controlling nero-terminal's window</h6>
+            <fieldset><legend class="legend" data-i18n="window.size_legend">Set the size of the terminal</legend>
+              <div class="row g-2 align-items-center">
+                <label class="col-sm-3 col-form-label col-form-label-sm" for="cols" data-i18n="window.cols">Columns</label>
+                <div class="col-sm-3"><input id="cols" type="number" min="20" max="500" value="120" class="form-control form-control-sm" /></div>
+                <label class="col-sm-3 col-form-label col-form-label-sm text-sm-end" for="rows" data-i18n="window.rows">Rows</label>
+                <div class="col-sm-3"><input id="rows" type="number" min="5" max="200" value="32" class="form-control form-control-sm" /></div>
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="cat-panel" data-cat="appearance" hidden>
+            <h6 class="panel-title" data-i18n="appearance.title">Options controlling font and cursor</h6>
+            <div class="row g-2 mb-2 align-items-center">
+              <label class="col-sm-4 col-form-label col-form-label-sm" for="font-family" data-i18n="appearance.font">Font</label>
+              <div class="col-sm-8"><select id="font-family" class="form-select form-select-sm"></select></div>
+            </div>
+            <div class="row g-2 mb-2 align-items-center">
+              <label class="col-sm-4 col-form-label col-form-label-sm" for="font-size" data-i18n="appearance.font_size">Font size</label>
+              <div class="col-sm-3"><input id="font-size" type="number" min="6" max="40" value="14" class="form-control form-control-sm" /></div>
+            </div>
+            <div class="row g-2 align-items-center">
+              <label class="col-sm-4 col-form-label col-form-label-sm" for="cursor-style" data-i18n="appearance.cursor">Cursor</label>
+              <div class="col-sm-4"><select id="cursor-style" class="form-select form-select-sm">
+                <option value="block" data-i18n="appearance.cursor_block">Block</option>
+                <option value="underline" data-i18n="appearance.cursor_underline">Underline</option>
+                <option value="bar" data-i18n="appearance.cursor_bar">Vertical bar</option>
+              </select></div>
+              <div class="col-sm-4 form-check ms-2"><input class="form-check-input" type="checkbox" id="cursor-blink" />
+                <label class="form-check-label small" for="cursor-blink" data-i18n="appearance.blink">Blink</label></div>
+            </div>
+          </div>
+
+          <div class="cat-panel" data-cat="colours" hidden>
+            <h6 class="panel-title" data-i18n="colours.title">Options controlling the terminal colours</h6>
+            <div class="row g-2 align-items-center">
+              <label class="col-sm-4 col-form-label col-form-label-sm" for="theme" data-i18n="colours.theme">Colour theme (palette)</label>
+              <div class="col-sm-6"><select id="theme" class="form-select form-select-sm"></select></div>
+            </div>
+          </div>
+
+          <div class="cat-panel" data-cat="data" hidden>
+            <h6 class="panel-title" data-i18n="data.title">Data to send to the server</h6>
+            <div class="row g-2 mb-2 align-items-center">
+              <label class="col-sm-4 col-form-label col-form-label-sm" for="username" data-i18n="data.username">Auto-login username</label>
+              <div class="col-sm-6"><input id="username" class="form-control form-control-sm" placeholder="user" data-i18n-placeholder="data.username_ph" /></div>
+            </div>
+            <div class="row g-2 align-items-center">
+              <label class="col-sm-4 col-form-label col-form-label-sm" for="term-type" data-i18n="data.term_type">Terminal-type string</label>
+              <div class="col-sm-4"><input id="term-type" class="form-control form-control-sm" value="xterm-256color" /></div>
+            </div>
+          </div>
+
+          <div class="cat-panel" data-cat="ssh" hidden>
+            <h6 class="panel-title" data-i18n="ssh.title">Options controlling SSH authentication</h6>
+            <div class="row g-2 mb-2 align-items-center">
+              <label class="col-sm-4 col-form-label col-form-label-sm" for="password" data-i18n="ssh.password">Password</label>
+              <div class="col-sm-6"><input id="password" type="password" class="form-control form-control-sm" placeholder="(optional)" data-i18n-placeholder="ssh.optional" autocomplete="off" /></div>
+            </div>
+            <div class="row g-2 mb-2 align-items-center">
+              <label class="col-sm-4 col-form-label col-form-label-sm" for="key-path" data-i18n="ssh.key">Private key file</label>
+              <div class="col-sm-8"><div class="input-group input-group-sm">
+                <input id="key-path" class="form-control" placeholder="(optional)" data-i18n-placeholder="ssh.optional" />
+                <button id="btn-browse-key" type="button" class="btn btn-outline-secondary"><i class="bi bi-key"></i></button>
+              </div></div>
+            </div>
+            <div class="row g-2 align-items-center">
+              <label class="col-sm-4 col-form-label col-form-label-sm" for="passphrase" data-i18n="ssh.passphrase">Key passphrase</label>
+              <div class="col-sm-6"><input id="passphrase" type="password" class="form-control form-control-sm" placeholder="(if key is encrypted)" data-i18n-placeholder="ssh.passphrase_ph" autocomplete="off" /></div>
+            </div>
+            <p class="text-secondary small mt-2 mb-0" data-i18n="ssh.hint">Leave password and key empty to be prompted in the terminal (login as / password).</p>
+          </div>
+        </section>
+      </div>
+
+      <div class="card-footer d-flex align-items-center gap-2 py-2">
+        <span id="cfg-error" class="small text-danger text-truncate"></span>
+        <div class="ms-auto d-flex gap-2">
+          <button id="btn-quit" type="button" class="btn btn-sm btn-outline-secondary" data-i18n="footer.quit">Quit</button>
+          <button id="btn-open" type="button" class="btn btn-sm btn-primary" data-i18n="footer.open"><i class="bi bi-play-fill me-1"></i>Open</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>
+  <script src="../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+  <script src="../node_modules/@xterm/addon-canvas/lib/addon-canvas.js"></script>
+  <script type="module" src="renderer.mjs"></script>
+</body>
+</html>

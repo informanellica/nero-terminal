@@ -1,0 +1,214 @@
+{
+  "module:main/main": {
+    "description": "<p>nero-terminal の Electron <strong>メインプロセス</strong>のエントリポイントです。</p>\n<p>担当する役割:</p>\n<ul>\n<li>アプリケーションウィンドウの生成 — フレームレスな Tera Term 風ウィンドウで、ネイティブの最小化・最大化・閉じるコントロールを右上にオーバーレイ表示し、その左側のカスタムタイトルバーにアプリ内設定ボタン用のスペースを確保します。</li>\n<li>セッションマネージャの IPC ハンドラの登録（{@link module:main/session-manager} を参照）。</li>\n<li>ネイティブタイトルバーのオーバーレイ配色を、レンダラーのライト／ダークテーマに合わせて同期させること。</li>\n<li>nero-electron-lib の <code>runApp</code> を通じて標準的なアプリのライフサイクルを駆動すること。</li>\n</ul>\n<p>ターミナル本体（PTY／SSH バックエンドおよび xterm ビュー）は <code>nero_modules/</code> 配下の共有ライブラリにあります。このファイルはアプリのシェル部分のみを担います。</p>"
+  },
+  "module:main/main~win": {
+    "description": "<p>唯一のアプリケーションウィンドウ。生成前および閉じた後は <code>null</code> です。</p>"
+  },
+  "module:main/main~sessions": {
+    "description": "<p>このウィンドウに紐づくセッションマネージャ。起動時に一度だけ登録されます。</p>"
+  },
+  "module:main/main~makeWindow": {
+    "description": "<p>アプリケーションウィンドウを生成し、そのライフサイクルを接続します。</p>\n<p>デフォルトメニューを削除し、タイトルにビルド情報（<code>nero-terminal vX.Y.Z [DEBUG] (commit)</code>）を刻み込み、ネイティブコントロールのオーバーレイを備えたフレームレスタイトルバーを構成し、レンダラーを読み込みます。ウィンドウが閉じられるとアクティブなセッションを破棄します。準備完了時および macOS での再アクティブ化時に <code>runApp</code> から呼び出されます。</p>",
+    "returns": "<p>新しく生成されたウィンドウ。</p>"
+  },
+  "module:main/preload": {
+    "description": "<p>プリロードスクリプト — サンドボックス化されたレンダラーとメインプロセスの間をつなぐ<strong>唯一</strong>の橋渡しです。Node アクセスを持ちつつ <code>contextIsolation</code> を有効にして実行され、<code>window</code> 上に 3 つの凍結された API オブジェクトを公開します:</p>\n<ul>\n<li><code>window.terminalAPI</code> — 生の PTY／SSH バイトフロー（ターミナルライブラリの {@link https://|exposeTerminalBridge} が提供）: <code>sendInput</code>、<code>resize</code>、<code>onData</code>、<code>onExit</code>。</li>\n<li><code>window.windowAPI</code> — {@link WindowAPI} を参照。</li>\n<li><code>window.sessionAPI</code> — {@link SessionAPI} を参照。</li>\n</ul>\n<p>レンダラーがメインプロセスに依頼できる操作は、すべてここに列挙されています。</p>"
+  },
+  "module:main/preload~WindowAPI": {
+    "description": "<p>フレームレスタイトルバーのコントロール。</p>",
+    "properties": {
+      "setTitleBarTheme": "<p>ネイティブのウィンドウコントロールオーバーレイを、ダーク（<code>true</code>）またはライトテーマ用に配色し直します。</p>"
+    }
+  },
+  "module:main/preload~ProfilesAPI": {
+    "description": "<p>保存済みセッション（PuTTY の「Saved Sessions」）の永続化。</p>",
+    "properties": {
+      "list": "<p>保存済みのすべてのプロファイルを一覧表示します。</p>",
+      "save": "<p><code>name</code> をキーにアップサートし、新しい一覧を返します。</p>",
+      "delete": "<p><code>name</code> をキーに削除し、新しい一覧を返します。</p>"
+    }
+  },
+  "module:main/preload~SessionAPI": {
+    "description": "<p>レンダラーに公開されるセッションの構成とライフサイクル。</p>",
+    "properties": {
+      "detectShells": "<p>このマシン上で見つかったローカルシェル。</p>",
+      "browseDir": "<p>開始ディレクトリを選択します（ダイアログ）。キャンセル時は <code>null</code>。</p>",
+      "browseKey": "<p>秘密鍵ファイルを選択します（ダイアログ）。キャンセル時は <code>null</code>。</p>",
+      "open": "<p>セッションを開き、ターミナルに接続します。</p>",
+      "close": "<p>アクティブなセッションを破棄します。</p>",
+      "profiles": "<p>保存済みセッションの永続化。</p>"
+    }
+  },
+  "module:main/session-manager": {
+    "description": "<p>セッションマネージャ — メインプロセスにおける nero-terminal の PuTTY 風セッション構成とライフサイクルを担います。</p>\n<p>リモートの <strong>SSH</strong> セッション（{@link SshHost} ／ ssh2）または<strong>ローカル</strong>シェル（{@link PtyHost} ／ node-pty）のいずれかを開きます。両者は同じホストインターフェースを実装するため、同一のターミナルライブラリ IPC ブリッジ（<code>attachPtyToIpc</code>）がどちらのバックエンドにも対応します。また、ローカルシェルの検出や「Saved Sessions」の <code>userData/sessions.json</code> への永続化も行います。</p>\n<p><code>scripts/session-smoke.js</code> によってヘッドレスで実行できるよう、{@link module:main/main} から切り出されています。</p>"
+  },
+  "module:main/session-manager~ShellDescriptor": {
+    "description": "<p>「Local」接続方式で提供されるローカルシェル。</p>",
+    "properties": {
+      "id": "<p>安定した識別子（例: <code>'powershell'</code>、<code>'wsl'</code>、<code>'gitbash'</code>）。</p>",
+      "label": "<p>ドロップダウンに表示される人間が読みやすい名前。</p>",
+      "shell": "<p>起動する実行可能ファイル。</p>",
+      "args": "<p>そのシェルのデフォルト引数。</p>"
+    }
+  },
+  "module:main/session-manager~SessionOptions": {
+    "description": "<p>{@link openSession}（および <code>window.sessionAPI.open</code>）が受け付けるオプション。</p>",
+    "properties": {
+      "type": "<p>接続方式。</p>",
+      "host": "<p>SSH: ホスト名または IP。</p>",
+      "port": "<p>SSH: ポート。</p>",
+      "username": "<p>SSH: ログインユーザー（未指定の場合はターミナル内で入力を求めます）。</p>",
+      "password": "<p>SSH: パスワード（未指定の場合はターミナル内で入力を求めます）。</p>",
+      "keyPath": "<p>SSH: 秘密鍵ファイルへのパス。メインプロセスが読み込みます。</p>",
+      "passphrase": "<p>SSH: 鍵のパスフレーズ。</p>",
+      "term": "<p>SSH: TERM 文字列。</p>",
+      "shell": "<p>ローカル: 起動する実行可能ファイル。</p>",
+      "args": "<p>ローカル: シェルの引数。</p>",
+      "cwd": "<p>ローカル: 作業ディレクトリ（デフォルトはホーム）。</p>",
+      "env": "<p>ローカル: 追加の環境変数。</p>"
+    }
+  },
+  "module:main/session-manager~SessionResult": {
+    "description": "<p>{@link openSession} の結果。</p>",
+    "properties": {
+      "pid": "<p>ローカル PTY の場合は OS のプロセス ID。SSH の場合は <code>null</code>。</p>",
+      "type": "<p>開かれた接続方式。</p>"
+    }
+  },
+  "module:main/session-manager~SessionProfile": {
+    "description": "<p>保存済みセッション（PuTTY の「Saved Sessions」）。{@link SessionOptions} のスーパーセットに表示用フィールドを加えたものです。シークレット（<code>password</code>、<code>passphrase</code>）は決して永続化されません。</p>"
+  },
+  "module:main/session-manager~SessionManager": {
+    "description": "<p>{@link createSessionManager} が返すオブジェクト。</p>",
+    "properties": {
+      "register": "<p>すべての <code>session:*</code> ／ <code>profiles:*</code> IPC ハンドラを登録します。</p>",
+      "openSession": "<p>セッションを直接開きます（スモークテストで使用）。</p>",
+      "closeSession": "<p>アクティブなセッションを破棄します。</p>"
+    }
+  },
+  "module:main/session-manager~firstExisting": {
+    "description": "<p><code>paths</code> の中で存在する最初のパスを返します。なければ <code>null</code>。</p>"
+  },
+  "module:main/session-manager~detectShells": {
+    "description": "<p>このマシン上で利用可能なローカルシェルを検出します（「Local」接続方式向け）。Windows の場合: PowerShell、pwsh 7（存在すれば）、コマンドプロンプト、WSL（存在すれば）、Git Bash（存在すれば）。それ以外の環境では <code>$SHELL</code> に加えて一般的な代替シェル。</p>"
+  },
+  "module:main/session-manager~createSessionManager": {
+    "description": "<p>単一のウィンドウに紐づくセッションマネージャを生成します。同時に保持できるライブセッション（ホスト＋その IPC ブリッジ）は最大 1 つです。</p>",
+    "params": {
+      "deps.app": "<p><code>userData</code>（保存済みセッションのパス）に使用します。</p>",
+      "deps.ipcMain": "<p>ハンドラと PTY ブリッジを接続する先。</p>",
+      "deps.dialog": "<p>ディレクトリ／鍵ファイルのピッカー用。</p>",
+      "deps.getWindow": "<p>対象のウィンドウを返します。</p>"
+    }
+  },
+  "module:main/session-manager~createSessionManager~closeSession": {
+    "description": "<p>アクティブなセッション — IPC ブリッジと、もしあればそのバックエンドホスト — を破棄します。</p>"
+  },
+  "module:main/session-manager~createSessionManager~openSession": {
+    "description": "<p>セッションを開き、ターミナルライブラリの IPC ブリッジ（<code>attachPtyToIpc</code>）を介してレンダラーのターミナルに接続します。既存のセッションがあれば先に閉じます。</p>\n<p><code>type: 'ssh'</code> の場合は {@link SshHost} を生成します（<code>keyPath</code> はここで秘密鍵バッファに読み込まれます）。<code>type: 'local'</code> の場合は {@link PtyHost} を起動します。</p>"
+  },
+  "module:main/session-manager~createSessionManager~register": {
+    "description": "<p>レンダラー向けのすべての IPC ハンドラを <code>ipcMain</code> に登録します:\n<code>session:detectShells</code>、<code>session:browseDir</code>、<code>session:browseKey</code>、<code>session:open</code>、<code>session:close</code>、および <code>profiles:list</code> ／ <code>profiles:save</code> ／ <code>profiles:delete</code>。起動時に一度だけ呼び出します。</p>"
+  },
+  "module:scripts/build": {
+    "description": "<p>ビルドのエントリ — nero-electron-lib の共有 Nero ビルドパイプライン（<code>runBuild</code>）に委譲し、すべての Nero アプリが同じ方法でビルドされるようにします。</p>\n<p>使用法: <code>node scripts/build.js &lt;release|debug&gt; &lt;win|mac|linux&gt;</code>\n（引数は <code>process.argv</code> から <code>runBuild</code> に転送されます）。<code>release</code> の Windows ビルドは、設定された EV 証明書でコード署名します。<code>debug</code> ビルドは署名をスキップします。出力先は <code>dist/</code>（release）または <code>dist-debug/</code>（debug）です。</p>"
+  },
+  "module:scripts/session-smoke": {
+    "description": "<p>実際の（非表示の）Electron ウィンドウ内で行う、セッションフローのエンドツーエンドスモークテストです。</p>\n<p>実際のレンダラーを IPC 経由で駆動します。<strong>ローカル</strong>シェルを開き、起動した PTY が <code>terminalAPI</code> 経由で出力をストリーム返却することを検証し、続いて到達不能なホストへの <strong>SSH</strong> セッションを開いて、PuTTY 風の対話的ログイン（<code>login as:</code> → パスワード → <code>Connecting…</code>）がターミナルに到達することを検証します。実際の SSH サーバーなしで {@link module:main/session-manager} をエンドツーエンドで動作させます。</p>\n<p>実行: <code>env -u ELECTRON_RUN_AS_NODE electron scripts/session-smoke.js</code>\n（終了コード 0 = 成功、1 = 失敗）。</p>"
+  },
+  "module:scripts/smoke-check": {
+    "description": "<p><code>npm test</code> — アプリが正しく組み上がっていることを確認する、高速で依存関係のないスモークチェックです。必要なエントリファイル／アイコンが存在すること、および JS ソースがパースできること（<code>node --check</code>）を検証します。最初の失敗で非ゼロを返して終了します。Electron は不要です。</p>"
+  },
+  "module:scripts/smoke-check~check": {
+    "description": "<p>チェック結果を記録します。</p>",
+    "params": {
+      "label": "<p>人間が読みやすい説明。</p>",
+      "ok": "<p>チェックに合格したかどうか。</p>"
+    }
+  },
+  "module:renderer/renderer": {
+    "description": "<p>nero-terminal の Tera Term 風ウィンドウのレンダラーです。</p>\n<p>アーキテクチャ:</p>\n<ul>\n<li>起動時に生成され常に表示される、単一の<strong>永続的</strong>な xterm ターミナル（{@link module:renderer/renderer~ensureTerminal}）。これにより常に正しく描画されます（非表示／再表示の切り替えは行いません — これは以前 xterm の初回描画を壊す原因でした）。</li>\n<li>セッションの<strong>構成</strong>は、ターミナル上に重ねて表示するオーバーレイダイアログで、起動時に表示され、タイトルバーの歯車ボタンから再度開けます。</li>\n<li>{@link module:renderer/renderer~startSession} は <code>window.sessionAPI</code> を通じてセッションを開き、その後 <code>window.terminalAPI</code> のバイトをビューに流し込みます。</li>\n<li>UI テキストは {@link I18n}（<code>data-i18n</code> 属性＋ <code>t()</code>）でローカライズされ、ライト／ダークテーマには Bootstrap の <code>data-bs-theme</code> を使用します。</li>\n</ul>\n<p>ターミナルバックエンド（PTY／SSH）と xterm ラッパーは <code>nero_modules/</code> 配下の共有ライブラリから提供されます。</p>"
+  },
+  "module:renderer/renderer~setUiTheme": {
+    "description": "<p>Bootstrap のライト／ダーク UI テーマを適用し、月／太陽アイコンを切り替え、それに合わせてネイティブタイトルバーのオーバーレイを配色し直すようメインプロセスに依頼します。</p>"
+  },
+  "module:renderer/renderer~ensureTerminal": {
+    "description": "<p>単一の永続的な {@link TerminalView}（xterm ＋ fit ＋ canvas レンダラー）を一度だけ生成し、<code>#terminal</code> にマウントします。冪等です。ターミナルは表示された状態で生成され、決して非表示にされないため、xterm は常に正しく描画されます。</p>"
+  },
+  "module:renderer/renderer~settingsOpen": {
+    "returns": "<p>構成オーバーレイが現在表示されているかどうか。</p>"
+  },
+  "module:renderer/renderer~openSettings": {
+    "description": "<p>セッション構成オーバーレイをターミナル上に表示し、ホストフィールドにフォーカスします。</p>"
+  },
+  "module:renderer/renderer~closeSettings": {
+    "description": "<p>構成オーバーレイを非表示にし、フォーカスをターミナルに戻します。</p>"
+  },
+  "module:renderer/renderer~formToProfile": {
+    "description": "<p>構成フォームを {@link SessionProfile} の形のオブジェクトとしてスナップショットします。保存とセッションのオープンの両方で使用されます。</p>"
+  },
+  "module:renderer/renderer~resolveLaunch": {
+    "description": "<p>フォームのスナップショットを <code>window.sessionAPI.open</code> 用のペイロードに変換し、あわせてタイトルバー用の短い表示用 <code>label</code> も生成します。必須フィールド（SSH ホスト、またはカスタムコマンド／シェル）が欠けている場合は、ローカライズされた Error をスローします。</p>",
+    "params": {
+      "p": "<p>{@link formToProfile} によるフォーム値</p>"
+    },
+    "returns": "<p><code>type</code>、接続フィールド、および表示用 <code>label</code> を含む <code>sessionAPI.open</code> ペイロード。</p>"
+  },
+  "module:renderer/renderer~startSession": {
+    "description": "<p>現在のフォーム値でセッションを開き、永続的なターミナルに接続します。以前のセッションがあれば破棄し、セッションごとの xterm オプション（フォント／テーマ／スクロールバック／カーソル）を適用して画面をリセットし、ビューの準備が整うまで初期の出力をバッファリングしてから、<code>terminalAPI</code> ⇄ ビューを接続してオーバーレイを閉じます。バリデーションや接続のエラーは {@link flash} を介してインライン表示されます。</p>"
+  },
+  "module:renderer/renderer~flash": {
+    "description": "<p>ダイアログのフッターに一時的なメッセージを表示します。</p>",
+    "params": {
+      "msg": "<p>メッセージテキスト（空でクリア）。</p>",
+      "isError": "<p><code>true</code> のとき赤（エラー）、それ以外は控えめな色（情報）。</p>"
+    }
+  },
+  "module:renderer/renderer~init": {
+    "description": "<p>レンダラーをブートストラップします: 静的な DOM をローカライズして言語ピッカーを接続し、永続的なターミナルを生成し、すべてのイベントハンドラを<strong>同期的に</strong>アタッチし（非同期セットアップが遅かったり失敗したりしてもボタンが機能するように）、カラーテーマとインストール済みフォントのピッカーを構築し、設定オーバーレイを表示してから、検出されたシェルと保存済みセッションを読み込みます。</p>"
+  },
+  "module:renderer/renderer~applyLiveTerminalOptions": {
+    "description": "<p>現在の表示設定（フォント・カーソル・スクロールバック・配色テーマ）を、セッションを開き直さずに稼働中の永続ターミナルへ即時適用します。フォント拡大などの変更がセッション中でもすぐに反映されます。</p>"
+  },
+  "module:renderer/renderer~startDefaultSession": {
+    "description": "<p>手動設定を省略して、デフォルトのローカルシェルを即座に開きます。「起動時にデフォルト端末を開く」トグルの動作を担い、要求されたプロファイルを開けない場合の妥当なフォールバックにもなります。</p>"
+  },
+  "module:renderer/renderer~openProfileByName": {
+    "description": "<p>保存済みセッションプロファイルを名前で読み込み、即座に開始します。Windows のジャンプリスト項目（または <code>--open-profile</code> 起動引数）で保存済みセッションが選択されたときに呼ばれます。プロファイルが見つからない場合は設定ダイアログを表示します。</p>",
+    "params": {
+      "name": "<p>保存済みセッションの名前。</p>"
+    }
+  },
+  "module:main/main~parseProfileArg": {
+    "description": "<p>起動引数 <code>--open-profile=&lt;name&gt;</code> から保存済みセッション名を取り出します。</p>",
+    "params": {
+      "argv": "<p>プロセスの引数配列。</p>"
+    },
+    "returns": "<p>プロファイル名。無ければ <code>null</code>。</p>"
+  },
+  "module:main/main~sendOpenProfile": {
+    "description": "<p>レンダラーに、指定名の保存済みセッションを開くよう要求します。</p>",
+    "params": {
+      "name": "<p>保存済みセッションの名前。</p>"
+    }
+  },
+  "module:main/main~setupJumpList": {
+    "description": "<p>保存済みセッションを Windows タスクバーのジャンプリストとして公開します（他プラットフォームでは何もしません）。タスクバーアイコンを右クリックして保存済みセッションを起動できます。</p>"
+  },
+  "module:main/session-manager~buildJumpList": {
+    "description": "<p>保存済みセッションプロファイルから Windows タスクバーのジャンプリストを構築します（<code>app.setJumpList()</code> 用）。各エントリはアプリを <code>--open-profile=\"&lt;name&gt;\"</code> で再起動し、起動中のインスタンスがその保存済みセッションを開きます。プロファイルが無い場合は空配列を返します（リストをクリアします）。</p>",
+    "params": {
+      "execPath": "<p>アプリ実行ファイルへのパス（<code>process.execPath</code>）。</p>",
+      "profiles": "<p>一覧表示する保存済みプロファイル。</p>",
+      "iconPath": "<p>各ジャンプリストエントリに表示するアイコン。</p>"
+    },
+    "returns": "<p><code>app.setJumpList()</code> 用のカテゴリ配列。</p>"
+  },
+  "module:scripts/docs": {
+    "description": "<p>ドキュメントのビルド — 対応するすべての言語で JSDoc API リファレンスを生成し、言語切替を組み込みます。</p>\n<p>ソースコメントは英語のみです（README「コーディング規約」を参照）。日本語（および将来の言語）は、{@link module:scripts/jsdoc-i18n-plugin} が <code>docs-i18n/&lt;lang&gt;.json</code> を読むポスト処理で生成します。</p>\n<p>各言語 <code>L</code> について <code>DOC_LANG=L</code> で JSDoc を <code>release-github/docs/src/&lt;L&gt;/</code> に実行し、生成された各ページに言語切替リンクを注入したうえで、訪問者の優先言語へリダイレクトする <code>release-github/docs/src/index.html</code> を書き出します。</p>\n<p>実行: <code>npm run docs</code></p>"
+  },
+  "module:scripts/jsdoc-i18n-plugin": {
+    "description": "<p>JSDoc の i18n ポスト処理プラグイン。</p>\n<p>ソースコメントは<strong>英語のみ</strong>（canonical）で記述し、ソースには翻訳を置きません。ローカライズしたドキュメントを生成するには、<code>DOC_LANG=&lt;lang&gt;</code> を指定し、<code>docs-i18n/&lt;lang&gt;.json</code>（または <code>DOC_I18N_FILE</code> が指すファイル）に翻訳を用意します。ファイルは doclet の <code>longname</code> をキーとし、一致する <code>description</code> ／ <code>classdesc</code> ／ <code>returns</code> ／ <code>params</code> ／ <code>properties</code> の文を生成時に差し替えます。未登録のキーは英語にフォールバックするため、部分的な翻訳でも問題ありません。</p>"
+  }
+}

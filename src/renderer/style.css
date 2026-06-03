@@ -1,0 +1,52 @@
+/* Layout only — light/dark theming is Bootstrap's data-bs-theme default. */
+html, body { height: 100%; }
+body { margin: 0; overflow: hidden; display: flex; flex-direction: column; background: #000; }
+
+/* ===== title bar (frameless; native min/max/close overlaid top-right) ===== */
+#titlebar {
+  height: 32px; flex: 0 0 32px; display: flex; align-items: center; gap: 8px;
+  padding: 0 8px; padding-right: 140px;     /* keep clear of the native window controls */
+  background: var(--bs-body-bg); border-bottom: 1px solid var(--bs-border-color);
+  -webkit-app-region: drag; user-select: none; font-size: 12px;
+}
+#titlebar .tb-name { font-weight: 600; }
+#titlebar .tb-session { color: var(--bs-secondary-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#titlebar .tb-spacer { flex: 1 1 auto; }
+.tb-btn {
+  -webkit-app-region: no-drag; border: 0; background: transparent; color: var(--bs-body-color);
+  padding: 2px 8px; border-radius: 4px; cursor: pointer; line-height: 1;
+}
+.tb-btn:hover { background: var(--bs-secondary-bg); }
+.tb-lang {
+  -webkit-app-region: no-drag; height: 22px; padding: 0 4px; font-size: 12px; cursor: pointer;
+  background: var(--bs-body-bg); color: var(--bs-body-color);
+  border: 1px solid var(--bs-border-color); border-radius: 4px;
+}
+
+/* ===== terminal (always present, fills the area below the title bar) ===== */
+#terminal { flex: 1 1 auto; min-height: 0; padding: 4px; background: #000; }
+
+/* ===== settings overlay (a dialog over the terminal) ===== */
+#settings-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0, 0, 0, 0.45);
+  align-items: center; justify-content: center;
+}
+#settings-overlay.d-flex { display: flex; }
+.settings-dialog {
+  width: min(860px, 94vw); height: min(560px, 90vh);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.settings-body { flex: 1 1 auto; display: flex; min-height: 0; overflow: hidden; }
+
+.cfg-nav { width: 190px; padding: 10px; border-right: 1px solid var(--bs-border-color); overflow: auto; }
+.cat-list .cat { padding: 3px 8px; border-radius: 4px; cursor: pointer; user-select: none; white-space: nowrap; }
+.cat-list .cat.sub { padding-left: 24px; }
+.cat-list .cat:hover { background: var(--bs-secondary-bg); }
+.cat-list .cat.active { background: var(--bs-primary); color: #fff; }
+
+.cfg-panels { flex: 1 1 auto; min-width: 0; overflow: auto; padding: 14px 18px; }   /* the only scroll area */
+.panel-title { padding-bottom: 6px; border-bottom: 1px solid var(--bs-border-color); margin-bottom: 14px; }
+.legend { font-size: .8rem; color: var(--bs-secondary-color); }
+fieldset { border: 1px solid var(--bs-border-color); border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; }
+fieldset .legend { width: auto; padding: 0 6px; margin-bottom: 0; }

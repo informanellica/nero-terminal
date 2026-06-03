@@ -1,0 +1,12 @@
+[submodule "src/nero_modules/terminal"]
+	path = src/nero_modules/terminal
+	url = https://github.com/informanellica/nero-terminal-lib.git
+[submodule "src/nero_modules/electron"]
+	path = src/nero_modules/electron
+	url = https://github.com/informanellica/nero-electron-lib.git
+[submodule "src/nero_modules/i18n"]
+	path = src/nero_modules/i18n
+	url = https://github.com/informanellica/nero-i18n-lib.git
+[submodule "src/nero_modules/jsdoc-theme"]
+	path = src/nero_modules/jsdoc-theme
+	url = https://github.com/informanellica/nero-jsdoc-theme.git

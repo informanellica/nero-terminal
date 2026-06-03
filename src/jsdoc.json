@@ -1,0 +1,43 @@
+{
+  "tags": {
+    "allowUnknownTags": true
+  },
+  "source": {
+    "include": [
+      "./main",
+      "./renderer"
+    ],
+    "exclude": [
+      "node_modules",
+      "nero_modules"
+    ],
+    "includePattern": ".+\\.(js|mjs)$"
+  },
+  "templates": {
+    "default": {
+      "outputSourceFiles": false
+    }
+  },
+  "plugins": [
+    "plugins/markdown",
+    "./scripts/jsdoc-i18n-plugin.js"
+  ],
+  "opts": {
+    "encoding": "utf8",
+    "destination": "../docs/src",
+    "recurse": true,
+    "template": "./nero_modules/jsdoc-theme",
+    "theme_opts": {
+      "search": true,
+      "homepageTitle": "nero-terminal",
+      "title": "nero-terminal",
+      "default_theme": "dark",
+      "includeFilesListInHomepage": false,
+      "footer": "<div style='margin-bottom: 0.5rem;'>nero-terminal docs</div>"
+    }
+  },
+  "markdown": {
+    "hardwrap": false,
+    "idInHeadings": true
+  }
+}
