@@ -59,6 +59,27 @@ npm run build:mac
 - 上記環境変数が未設定の場合、署名のみ行い公証はスキップします (ビルドは成功)。
 - デバッグ版 (`build:mac:debug`) は署名・公証ともに行いません。
 
+### Windows の署名
+
+公開リポジトリの `package.json` には**証明書情報を含めません**（`signtoolOptions` から
+`certificateSha1` を除いてあります）。そのため `npm run build` 単体は**未署名**ビルドです。
+
+署名付きリリースは**非公開側のビルドスクリプト**から、`runBuild` の `configHook` で
+証明書の拇印をメモリ上に注入して行います。公開設定ファイルは書き換えず、環境変数も不要です。
+
+```js
+// 非公開側ビルドスクリプト (抜粋)
+runBuild({
+  projectDir, argv: ['release', 'win'],
+  configHook: (config) => {
+    config.win.signtoolOptions = {
+      ...config.win.signtoolOptions,
+      certificateSha1: '<thumbprint>',  // 非公開側にのみ存在
+    };
+  },
+});
+```
+
 ## コーディング規約
 
 - **ソースコードのコメント (JSDoc 含む) は英語のみで書く。** 日本語訳をソースに混在させない。
