@@ -40,8 +40,24 @@ npm test
 ```sh
 npm run build          # Windows リリース版 → dist/
 npm run build:debug    # Windows デバッグ版  → dist-debug/
-npm run build:mac      # macOS リリース版
+npm run build:mac      # macOS リリース版    → dist-mac/ (.dmg / .zip, arm64)
+npm run build:mac:debug # macOS デバッグ版   → dist-mac-debug/ (署名・公証なし)
 ```
+
+### macOS の署名・公証
+
+リリース版 (`build:mac`) は Developer ID で署名し、Apple の公証 (notarization) まで行います。
+公証には App Store Connect API キーの環境変数が必要です。ローカルでは `~/.env.notary` にまとめておき、
+ビルド前に読み込みます。
+
+```sh
+source ~/.env.notary    # APPLE_API_KEY / APPLE_API_KEY_ID / APPLE_API_ISSUER を export
+npm run build:mac
+```
+
+- ハードンドランタイムと JIT 用 entitlements は electron-builder の既定値で自動付与されます。
+- 上記環境変数が未設定の場合、署名のみ行い公証はスキップします (ビルドは成功)。
+- デバッグ版 (`build:mac:debug`) は署名・公証ともに行いません。
 
 ## コーディング規約
 

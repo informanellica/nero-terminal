@@ -398,6 +398,11 @@ function flash(msg, isError) {
  * @returns {Promise<void>}
  */
 async function init() {
+  // On macOS the native traffic-light controls sit at the top-left, so the title
+  // bar must reserve room there instead of on the right (Windows/Linux overlay).
+  if (window.windowAPI && window.windowAPI.platform === 'darwin') {
+    document.documentElement.classList.add('platform-mac');
+  }
   initUiTheme();
   ensureTerminal();
 

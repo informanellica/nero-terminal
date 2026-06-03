@@ -9,6 +9,9 @@ body { margin: 0; overflow: hidden; display: flex; flex-direction: column; backg
   background: var(--bs-body-bg); border-bottom: 1px solid var(--bs-border-color);
   -webkit-app-region: drag; user-select: none; font-size: 12px;
 }
+/* macOS: the native traffic-light controls sit top-left, so reserve room there
+   and drop the right-side reservation (Windows/Linux put their controls there). */
+.platform-mac #titlebar { padding-left: 78px; padding-right: 8px; }
 #titlebar .tb-name { font-weight: 600; }
 #titlebar .tb-session { color: var(--bs-secondary-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #titlebar .tb-spacer { flex: 1 1 auto; }

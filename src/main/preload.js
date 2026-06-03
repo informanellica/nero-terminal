@@ -22,6 +22,10 @@ const { exposeTerminalBridge } = require('../nero_modules/terminal/src/transport
  * @typedef {object} WindowAPI
  * @property {function(boolean): Promise<boolean>} setTitleBarTheme
  *   Recolour the native window-control overlay for the dark (`true`) or light theme.
+ * @property {string} platform
+ *   The host platform (`process.platform`), so the renderer can lay the title
+ *   bar out around the native window controls (macOS traffic lights sit on the
+ *   left; Windows/Linux overlay min/max/close on the right).
  */
 
 /**
@@ -64,6 +68,7 @@ ipcRenderer.on('app:open-profile', (_e, name) => {
 /** @type {WindowAPI} */
 contextBridge.exposeInMainWorld('windowAPI', {
   setTitleBarTheme: (dark) => ipcRenderer.invoke('window:titlebar', dark),
+  platform: process.platform,
 });
 
 /** @type {SessionAPI} */
