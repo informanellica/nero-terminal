@@ -58,6 +58,7 @@ const $ = (id) => document.getElementById(id);
 let shells = [];
 let view = null;   // persistent terminal
 let conn = null;   // current session wiring
+let activeLabel = '';   // label of the current session (for the "(inactive)" marker)
 
 // ---- monospace font picker (only list fonts actually installed) -----------
 const DEFAULT_FONT = 'Cascadia Mono, Consolas, monospace';
@@ -311,6 +312,8 @@ async function startSession() {
   }
 
   closeSettings();
+  activeLabel = l.label;
+  hideExitToast();
   $('tb-session').textContent = '— ' + l.label;
   view.fit();
   sink = (d) => view.write(d);
@@ -319,9 +322,34 @@ async function startSession() {
 
   const offInput = view.onInput((d) => window.terminalAPI.sendInput(d));
   const offResize = view.onResize((c, r) => window.terminalAPI.resize(c, r));
+  const offExit = window.terminalAPI.onExit(() => handleSessionExit());
   window.terminalAPI.resize(view.cols, view.rows);
   view.focus();
-  conn = { dispose() { offData(); offInput(); offResize(); } };
+  conn = { dispose() { offData(); offInput(); offResize(); offExit(); } };
+}
+
+/**
+ * Called when the active session's backend exits — a remote SSH disconnect or a
+ * local shell exit. Marks the title bar `(inactive)` (PuTTY style), prints a
+ * notice in the terminal, and shows a bottom-right toast. Intentional teardown
+ * (opening another session / closing) unsubscribes first, so it does not fire.
+ */
+function handleSessionExit() {
+  $('tb-session').textContent = '— ' + activeLabel + ' (inactive)';
+  if (view) view.write(`\r\n\x1b[33m[${i18n.t('msg.disconnected')}]\x1b[0m\r\n`);
+  showExitToast(i18n.t('msg.disconnected') + (activeLabel ? ` — ${activeLabel}` : ''));
+}
+
+/** Show the bottom-right disconnect toast with a message. */
+function showExitToast(msg) {
+  const el = $('exit-toast'); if (!el) return;
+  $('exit-toast-msg').textContent = msg;
+  el.classList.add('show');
+}
+
+/** Hide the disconnect toast. */
+function hideExitToast() {
+  const el = $('exit-toast'); if (el) el.classList.remove('show');
 }
 
 /**
@@ -425,6 +453,7 @@ async function init() {
   $('btn-theme').addEventListener('click', toggleUiTheme);
   $('btn-settings').addEventListener('click', openSettings);
   $('btn-close-settings').addEventListener('click', closeSettings);
+  $('exit-toast-close').addEventListener('click', hideExitToast);
   $('btn-open').addEventListener('click', startSession);
   $('btn-quit').addEventListener('click', () => window.close());
   $('btn-browse').addEventListener('click', async () => { const d = await window.sessionAPI.browseDir(); if (d) $('cwd').value = d; });

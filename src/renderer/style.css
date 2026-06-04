@@ -53,3 +53,16 @@ body { margin: 0; overflow: hidden; display: flex; flex-direction: column; backg
 .legend { font-size: .8rem; color: var(--bs-secondary-color); }
 fieldset { border: 1px solid var(--bs-border-color); border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; }
 fieldset .legend { width: auto; padding: 0 6px; margin-bottom: 0; }
+
+/* ===== disconnect toast (bottom-right, shown when a session goes inactive) ===== */
+.exit-toast {
+  position: fixed; right: 16px; bottom: 16px; z-index: 1080;
+  display: none; align-items: center; gap: 8px;
+  max-width: 360px; padding: 10px 12px;
+  background: #8a1c1c; color: #fff; border-radius: 8px; font-size: 13px;
+}
+.exit-toast.show { display: flex; }
+.exit-toast .exit-toast-close {
+  margin-left: 4px; padding: 0 4px; border: 0; background: transparent;
+  color: #fff; font-size: 20px; line-height: 1; cursor: pointer;
+}

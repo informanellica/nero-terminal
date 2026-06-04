@@ -196,6 +196,13 @@
     </div>
   </div>
 
+  <!-- Disconnect notification (bottom-right toast) -->
+  <div id="exit-toast" class="exit-toast shadow" role="alert" aria-live="assertive">
+    <i class="bi bi-plug-fill"></i>
+    <span id="exit-toast-msg"></span>
+    <button type="button" id="exit-toast-close" class="exit-toast-close" aria-label="Close">&times;</button>
+  </div>
+
   <script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>
   <script src="../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
   <script src="../node_modules/@xterm/addon-canvas/lib/addon-canvas.js"></script>
