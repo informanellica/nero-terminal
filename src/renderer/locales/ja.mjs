@@ -68,6 +68,9 @@ export default {
   'ssh.passphrase': '鍵のパスフレーズ',
   'ssh.passphrase_ph': '（鍵が暗号化されている場合）',
   'ssh.hint': 'パスワードと鍵を空にすると、端末上で対話入力（login as / password）になります。',
+  'ssh.x11_title': 'X11 転送',
+  'ssh.x11': 'X11 転送を有効にする',
+  'ssh.x11_hint': 'リモートの X11 アプリをローカルの X サーバー（例: VcXsrv、DISPLAY :0 / ポート 6000）へ転送します。',
 
   'footer.quit': '終了',
   'footer.open': '接続',

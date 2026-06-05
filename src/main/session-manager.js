@@ -196,7 +196,7 @@ function createSessionManager({ app, ipcMain, dialog, getWindow, onProfilesChang
       host = new SshHost({
         host: opts.host, port: opts.port || 22, username: opts.username,
         password: opts.password || undefined, privateKey, passphrase: opts.passphrase || undefined,
-        term: opts.term || 'xterm-256color', cols, rows,
+        term: opts.term || 'xterm-256color', cols, rows, x11: !!opts.x11,
       });
     } else {
       const env = Object.assign({}, process.env);

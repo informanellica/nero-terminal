@@ -68,6 +68,9 @@ export default {
   'ssh.passphrase': 'Key passphrase',
   'ssh.passphrase_ph': '(if key is encrypted)',
   'ssh.hint': 'Leave password and key empty to be prompted in the terminal (login as / password).',
+  'ssh.x11_title': 'X11 forwarding',
+  'ssh.x11': 'Enable X11 forwarding',
+  'ssh.x11_hint': 'Forwards remote X11 apps to a local X server (e.g. VcXsrv on DISPLAY :0 / port 6000).',
 
   'footer.quit': 'Quit',
   'footer.open': 'Open',

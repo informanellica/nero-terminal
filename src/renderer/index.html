@@ -182,6 +182,12 @@
               <div class="col-sm-6"><input id="passphrase" type="password" class="form-control form-control-sm" placeholder="(if key is encrypted)" data-i18n-placeholder="ssh.passphrase_ph" autocomplete="off" /></div>
             </div>
             <p class="text-secondary small mt-2 mb-0" data-i18n="ssh.hint">Leave password and key empty to be prompted in the terminal (login as / password).</p>
+            <h6 class="panel-title mt-3" data-i18n="ssh.x11_title">X11 forwarding</h6>
+            <div class="form-check">
+              <input id="x11-forward" type="checkbox" class="form-check-input" />
+              <label class="form-check-label" for="x11-forward" data-i18n="ssh.x11">Enable X11 forwarding</label>
+            </div>
+            <p class="text-secondary small mt-1 mb-0" data-i18n="ssh.x11_hint">Forwards remote X11 apps to a local X server (e.g. VcXsrv on DISPLAY :0 / port 6000).</p>
           </div>
         </section>
       </div>
