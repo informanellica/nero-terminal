@@ -1,0 +1,156 @@
+{
+  "name": "nero-terminal-vscode",
+  "displayName": "nero-terminal",
+  "description": "Open your saved nero-terminal SSH sessions as native VS Code terminals.",
+  "version": "0.2.0",
+  "publisher": "informanellica",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.84.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "ssh",
+    "terminal",
+    "remote",
+    "putty"
+  ],
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/informanellica/nero-terminal.git"
+  },
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onTerminalProfile:nero-terminal.sshProfile"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "nero-terminal",
+      "properties": {
+        "neroTerminal.defaultTerm": {
+          "type": "string",
+          "default": "xterm-256color",
+          "description": "TERM value advertised to the SSH server."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "neroTerminal",
+          "title": "nero-terminal",
+          "icon": "media/activity.svg"
+        }
+      ]
+    },
+    "views": {
+      "neroTerminal": [
+        {
+          "id": "neroTerminal.sessions",
+          "name": "Saved sessions",
+          "icon": "media/activity.svg",
+          "contextualTitle": "nero-terminal"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "neroTerminal.sessions",
+        "contents": "No saved sessions yet.\n[Add SSH session](command:neroTerminal.addSession)"
+      }
+    ],
+    "terminal": {
+      "profiles": [
+        {
+          "id": "nero-terminal.sshProfile",
+          "title": "nero-terminal: SSH session"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "neroTerminal.addSession",
+        "title": "Add SSH session",
+        "category": "nero-terminal",
+        "icon": "$(add)"
+      },
+      {
+        "command": "neroTerminal.connect",
+        "title": "Open terminal",
+        "category": "nero-terminal",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "neroTerminal.editSession",
+        "title": "Edit session",
+        "category": "nero-terminal",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "neroTerminal.removeSession",
+        "title": "Remove session",
+        "category": "nero-terminal",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "neroTerminal.refresh",
+        "title": "Refresh",
+        "category": "nero-terminal",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "neroTerminal.quickConnect",
+        "title": "Connect to saved session…",
+        "category": "nero-terminal"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "neroTerminal.addSession",
+          "when": "view == neroTerminal.sessions",
+          "group": "navigation"
+        },
+        {
+          "command": "neroTerminal.refresh",
+          "when": "view == neroTerminal.sessions",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "neroTerminal.connect",
+          "when": "view == neroTerminal.sessions && viewItem == neroSession",
+          "group": "inline"
+        },
+        {
+          "command": "neroTerminal.editSession",
+          "when": "view == neroTerminal.sessions && viewItem == neroSession",
+          "group": "1_modify"
+        },
+        {
+          "command": "neroTerminal.removeSession",
+          "when": "view == neroTerminal.sessions && viewItem == neroSession",
+          "group": "1_modify"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "vscode:prepublish": "node esbuild.js --production",
+    "package": "vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "ssh2": "^1.15.0"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.84.0",
+    "@vscode/vsce": "^2.24.0",
+    "esbuild": "^0.20.0"
+  }
+}
