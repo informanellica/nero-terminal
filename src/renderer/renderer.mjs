@@ -150,6 +150,13 @@ function ensureTerminal() {
   if (CanvasAddon) { try { view.term.loadAddon(new CanvasAddon()); } catch (_) {} }
   view.fitOnWindowResize();
   requestAnimationFrame(() => view.fit());
+
+  // PuTTY / Tera Term style: copy to the clipboard as soon as text is selected
+  // (no Ctrl+C needed). Fires on every selection change; skip empty selections.
+  view.term.onSelectionChange(() => {
+    const sel = view.term.getSelection();
+    if (sel && window.windowAPI && window.windowAPI.copyText) window.windowAPI.copyText(sel);
+  });
 }
 
 // ---- settings overlay -----------------------------------------------------
