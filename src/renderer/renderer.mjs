@@ -157,6 +157,16 @@ function ensureTerminal() {
     const sel = view.term.getSelection();
     if (sel && window.windowAPI && window.windowAPI.copyText) window.windowAPI.copyText(sel);
   });
+
+  // PuTTY / Tera Term style: right-click pastes the clipboard into the terminal.
+  // term.paste() honours bracketed-paste mode and flows through onData to the
+  // backend, just like typed input.
+  $('terminal').addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    const text = window.windowAPI && window.windowAPI.readText ? window.windowAPI.readText() : '';
+    if (text) view.term.paste(text);
+    view.focus();
+  });
 }
 
 // ---- settings overlay -----------------------------------------------------

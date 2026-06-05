@@ -30,6 +30,9 @@ const { exposeTerminalBridge } = require('../nero_modules/terminal/src/transport
  *   Write text to the system clipboard via Electron's `clipboard` module (more
  *   reliable than `navigator.clipboard` under file://). Used for PuTTY/Tera
  *   Term-style copy-on-select. Returns `true` on success.
+ * @property {function(): string} readText
+ *   Read text from the system clipboard via Electron's `clipboard` module.
+ *   Used for PuTTY/Tera Term-style right-click paste. Returns `''` on failure.
  */
 
 /**
@@ -75,6 +78,9 @@ contextBridge.exposeInMainWorld('windowAPI', {
   platform: process.platform,
   copyText: (text) => {
     try { clipboard.writeText(String(text)); return true; } catch (_) { return false; }
+  },
+  readText: () => {
+    try { return clipboard.readText(); } catch (_) { return ''; }
   },
 });
 
