@@ -37,19 +37,19 @@ const CanvasAddon = window.CanvasAddon && window.CanvasAddon.CanvasAddon;
 
 // ---- colour themes (xterm palette objects) --------------------------------
 const THEMES = {
-  'Nero Dark':   { background: '#000000', foreground: '#e6e6e6', cursor: '#00ff66',
+  'Nero Dark':   { background: '#000000', foreground: '#e6e6e6', cursor: '#00ff66', selectionBackground: '#234876',
                    black:'#000000', red:'#ff5555', green:'#50fa7b', yellow:'#f1fa8c', blue:'#6db3ff',
                    magenta:'#ff79c6', cyan:'#8be9fd', white:'#e6e6e6' },
-  'Solarized Dark': { background:'#002b36', foreground:'#839496', cursor:'#93a1a1',
+  'Solarized Dark': { background:'#002b36', foreground:'#839496', cursor:'#93a1a1', selectionBackground: '#0a5163',
                    black:'#073642', red:'#dc322f', green:'#859900', yellow:'#b58900', blue:'#268bd2',
                    magenta:'#d33682', cyan:'#2aa198', white:'#eee8d5' },
-  'Solarized Light': { background:'#fdf6e3', foreground:'#657b83', cursor:'#586e75',
+  'Solarized Light': { background:'#fdf6e3', foreground:'#657b83', cursor:'#586e75', selectionBackground: '#cfe6f2',
                    black:'#073642', red:'#dc322f', green:'#859900', yellow:'#b58900', blue:'#268bd2',
                    magenta:'#d33682', cyan:'#2aa198', white:'#eee8d5' },
-  'Light':       { background: '#ffffff', foreground: '#1e1e1e', cursor: '#1e1e1e',
+  'Light':       { background: '#ffffff', foreground: '#1e1e1e', cursor: '#1e1e1e', selectionBackground: '#add6ff',
                    black:'#1e1e1e', red:'#c91b00', green:'#00c200', yellow:'#c7c400', blue:'#0225c7',
                    magenta:'#c930c7', cyan:'#00c5c7', white:'#c7c7c7' },
-  'Campbell (classic)': { background:'#0c0c0c', foreground:'#cccccc', cursor:'#ffffff',
+  'Campbell (classic)': { background:'#0c0c0c', foreground:'#cccccc', cursor:'#ffffff', selectionBackground: '#264f78',
                    black:'#0c0c0c', red:'#c50f1f', green:'#13a10e', yellow:'#c19c00', blue:'#0037da',
                    magenta:'#881798', cyan:'#3a96dd', white:'#cccccc' },
 };
@@ -150,6 +150,23 @@ function ensureTerminal() {
   if (CanvasAddon) { try { view.term.loadAddon(new CanvasAddon()); } catch (_) {} }
   view.fitOnWindowResize();
   requestAnimationFrame(() => view.fit());
+
+  // PuTTY / Tera Term style: copy to the clipboard as soon as text is selected
+  // (no Ctrl+C needed). Fires on every selection change; skip empty selections.
+  view.term.onSelectionChange(() => {
+    const sel = view.term.getSelection();
+    if (sel && window.windowAPI && window.windowAPI.copyText) window.windowAPI.copyText(sel);
+  });
+
+  // PuTTY / Tera Term style: right-click pastes the clipboard into the terminal.
+  // term.paste() honours bracketed-paste mode and flows through onData to the
+  // backend, just like typed input.
+  $('terminal').addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    const text = window.windowAPI && window.windowAPI.readText ? window.windowAPI.readText() : '';
+    if (text) view.term.paste(text);
+    view.focus();
+  });
 }
 
 // ---- settings overlay -----------------------------------------------------

@@ -14,7 +14,7 @@
  * @module main/preload
  */
 
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, clipboard } = require('electron');
 const { exposeTerminalBridge } = require('../nero_modules/terminal/src/transport/electron-preload');
 
 /**
@@ -26,6 +26,13 @@ const { exposeTerminalBridge } = require('../nero_modules/terminal/src/transport
  *   The host platform (`process.platform`), so the renderer can lay the title
  *   bar out around the native window controls (macOS traffic lights sit on the
  *   left; Windows/Linux overlay min/max/close on the right).
+ * @property {function(string): boolean} copyText
+ *   Write text to the system clipboard via Electron's `clipboard` module (more
+ *   reliable than `navigator.clipboard` under file://). Used for PuTTY/Tera
+ *   Term-style copy-on-select. Returns `true` on success.
+ * @property {function(): string} readText
+ *   Read text from the system clipboard via Electron's `clipboard` module.
+ *   Used for PuTTY/Tera Term-style right-click paste. Returns `''` on failure.
  */
 
 /**
@@ -69,6 +76,12 @@ ipcRenderer.on('app:open-profile', (_e, name) => {
 contextBridge.exposeInMainWorld('windowAPI', {
   setTitleBarTheme: (dark) => ipcRenderer.invoke('window:titlebar', dark),
   platform: process.platform,
+  copyText: (text) => {
+    try { clipboard.writeText(String(text)); return true; } catch (_) { return false; }
+  },
+  readText: () => {
+    try { return clipboard.readText(); } catch (_) { return ''; }
+  },
 });
 
 /** @type {SessionAPI} */
