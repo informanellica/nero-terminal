@@ -1,6 +1,6 @@
 {
   "name": "nero-terminal",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Nero - terminal emulator built with Electron (node-pty + xterm.js via nero-terminal-lib)",
   "main": "main/main.js",
   "scripts": {
