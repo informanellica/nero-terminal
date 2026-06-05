@@ -78,7 +78,8 @@
         </div>
         <p class="lead">
           PuTTY / Tera Term 風の SSH・ローカルシェル ターミナル。
-          保存済みセッション・鍵認証・配色テーマ・フォント設定を備えた、軽快なターミナルです。
+          保存済みセッション・公開鍵認証・X11 転送・配色テーマ・フォント設定を備えた、軽快なターミナルです。
+          保存済みセッションを <strong>VS Code 拡張</strong> からネイティブ端末として開くこともできます。
         </p>
         <div class="d-flex flex-wrap gap-2">
           <a href="https://github.com/informanellica/nero-terminal/releases/latest"
@@ -216,6 +217,30 @@
         </div>
       </div>
     </div>
+    <div class="col-md-6">
+      <div class="d-flex">
+        <i class="bi bi-display fs-3 text-primary me-3"></i>
+        <div>
+          <h5 class="mb-1">X11 転送</h5>
+          <p class="text-body-secondary mb-0 small">
+            セッションごとに X11 転送を有効化。リモートの GUI アプリをローカルの X サーバー
+            (Windows は VcXsrv、macOS は XQuartz など) へ転送します。
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="d-flex">
+        <i class="bi bi-window-stack fs-3 text-info me-3"></i>
+        <div>
+          <h5 class="mb-1">VS Code 拡張</h5>
+          <p class="text-body-secondary mb-0 small">
+            保存済み SSH セッションを VS Code の<strong>ネイティブ端末</strong>として接続
+            (WebView やエミュレータ非搭載)。スクロールバック・検索・リンク・テーマは VS Code 標準のまま。
+          </p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <h2>使い方</h2>
@@ -251,6 +276,17 @@
     <li>dmg を開き、「nero-terminal」を <strong>アプリケーション</strong> フォルダにドラッグ</li>
     <li>アプリケーションから「nero-terminal」を起動</li>
   </ol>
+  <h3 class="h5 mt-3"><i class="bi bi-window-stack me-1"></i>VS Code 拡張</h3>
+  <ol>
+    <li><a href="https://github.com/informanellica/nero-terminal/releases/latest">最新版リリースページ</a>から
+        <code>nero-terminal-vscode-x.y.z.vsix</code> をダウンロード</li>
+    <li>VS Code の拡張機能ビュー右上「…」→ <strong>Install from VSIX…</strong> で選択
+        (または <code>code --install-extension nero-terminal-vscode-x.y.z.vsix</code>)</li>
+    <li>アクティビティバーの <strong>nero-terminal</strong> ビューから SSH セッションを追加して接続</li>
+  </ol>
+  <p class="text-body-secondary small">
+    ※ <code>.vsix</code> をダブルクリックすると Visual Studio (Code ではない) のインストーラが起動する場合があります。上記の手順で VS Code に追加してください。
+  </p>
 
   <h2>開発者向け</h2>
   <p>
