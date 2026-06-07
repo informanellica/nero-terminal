@@ -86,5 +86,12 @@ export default {
   'msg.saved': '「{name}」を保存しました',
   'msg.disconnected': 'セッションが切断されました',
   'msg.reconnect': '再接続',
+  'update.check_enabled': '起動時に更新を確認する',
+  'update.check': '今すぐ更新を確認',
+  'update.checking': '確認中…',
+  'update.available': '新しいバージョン v{ver} があります',
+  'update.uptodate': '最新版です（v{ver}）',
+  'update.failed': '更新の確認に失敗しました',
+  'update.download': 'ダウンロード',
   'tag.local': '（ローカル）',
 };

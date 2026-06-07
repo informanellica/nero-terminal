@@ -72,3 +72,22 @@ fieldset .legend { width: auto; padding: 0 6px; margin-bottom: 0; }
   margin-left: 4px; padding: 0 4px; border: 0; background: transparent;
   color: #fff; font-size: 20px; line-height: 1; cursor: pointer;
 }
+
+/* ===== update toast (bottom-right, shown when a newer release is found) ===== */
+.update-toast {
+  position: fixed; right: 16px; bottom: 16px; z-index: 1080;
+  display: none; align-items: center; gap: 8px;
+  max-width: 380px; padding: 10px 12px;
+  background: #14532d; color: #fff; border-radius: 8px; font-size: 13px;
+}
+.update-toast.show { display: flex; }
+.update-toast .update-toast-download {
+  margin-left: 8px; padding: 3px 10px; border: 1px solid rgba(255, 255, 255, .6);
+  background: rgba(255, 255, 255, .12); color: #fff; border-radius: 6px;
+  font-size: 12px; line-height: 1.4; cursor: pointer; white-space: nowrap;
+}
+.update-toast .update-toast-download:hover { background: rgba(255, 255, 255, .25); }
+.update-toast .update-toast-close {
+  margin-left: 4px; padding: 0 4px; border: 0; background: transparent;
+  color: #fff; font-size: 20px; line-height: 1; cursor: pointer;
+}

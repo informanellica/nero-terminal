@@ -67,9 +67,17 @@
                   <label class="form-check-label" for="ctype-local" data-i18n="session.local">Local shell</label></div>
               </div>
             </fieldset>
-            <div class="form-check form-switch mb-3">
+            <div class="form-check form-switch mb-2">
               <input class="form-check-input" type="checkbox" id="auto-open-default" />
               <label class="form-check-label small" for="auto-open-default" data-i18n="session.auto_open">Open the default local terminal at startup (skip this dialog)</label>
+            </div>
+            <div class="form-check form-switch mb-1">
+              <input class="form-check-input" type="checkbox" id="update-check-enabled" />
+              <label class="form-check-label small" for="update-check-enabled" data-i18n="update.check_enabled">Check for updates at startup</label>
+            </div>
+            <div class="mb-3">
+              <button type="button" id="btn-check-update" class="btn btn-outline-secondary btn-sm" data-i18n="update.check">Check for updates now</button>
+              <span id="update-status" class="small text-body-secondary ms-2"></span>
             </div>
             <div data-when="ssh">
               <div class="row g-2 mb-2 align-items-center">
@@ -208,6 +216,14 @@
     <span id="exit-toast-msg"></span>
     <button type="button" id="exit-toast-reconnect" class="exit-toast-reconnect" data-i18n="msg.reconnect">Reconnect</button>
     <button type="button" id="exit-toast-close" class="exit-toast-close" aria-label="Close">&times;</button>
+  </div>
+
+  <!-- Update notification (bottom-right toast, check-and-notify only) -->
+  <div id="update-toast" class="update-toast shadow" role="alert" aria-live="polite">
+    <i class="bi bi-arrow-up-circle-fill"></i>
+    <span id="update-toast-msg"></span>
+    <button type="button" id="update-toast-download" class="update-toast-download" data-i18n="update.download">Download</button>
+    <button type="button" id="update-toast-close" class="update-toast-close" aria-label="Close">&times;</button>
   </div>
 
   <script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>

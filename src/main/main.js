@@ -21,6 +21,7 @@ const path = require('path');
 const { app, ipcMain, dialog, Menu } = require('electron');
 const { createWindow, runApp, loadBuildInfo, formatTitle } = require('../nero_modules/electron');
 const { createSessionManager, buildJumpList } = require('./session-manager');
+const { registerUpdater } = require('./updater');
 
 /**
  * The single application window, or `null` before creation / after it closes.
@@ -38,6 +39,9 @@ const sessions = createSessionManager({
   onProfilesChanged: () => setupJumpList(),
 });
 sessions.register();
+
+// Update checker (check-and-notify only; see ./updater).
+registerUpdater({ ipcMain, app });
 
 /**
  * IPC `window:titlebar` — recolour the native window-control overlay to match

@@ -86,5 +86,12 @@ export default {
   'msg.saved': 'Saved "{name}"',
   'msg.disconnected': 'Session disconnected',
   'msg.reconnect': 'Reconnect',
+  'update.check_enabled': 'Check for updates at startup',
+  'update.check': 'Check for updates now',
+  'update.checking': 'Checking…',
+  'update.available': 'A new version v{ver} is available',
+  'update.uptodate': 'You are up to date (v{ver})',
+  'update.failed': 'Update check failed',
+  'update.download': 'Download',
   'tag.local': '(local)',
 };

@@ -84,6 +84,21 @@ contextBridge.exposeInMainWorld('windowAPI', {
   },
 });
 
+/**
+ * Update checker (check-and-notify only).
+ * @typedef {object} UpdateAPI
+ * @property {function(): Promise<object>} check
+ *   Ask the main process to query GitHub for a newer release. Resolves to
+ *   `{ok:true, updateAvailable, current, latest, url}` or `{ok:false, error}`.
+ * @property {function(): Promise<boolean>} openDownload
+ *   Open the official releases page in the default browser (fixed pinned URL).
+ */
+/** @type {UpdateAPI} */
+contextBridge.exposeInMainWorld('updateAPI', {
+  check: () => ipcRenderer.invoke('update:check'),
+  openDownload: () => ipcRenderer.invoke('update:openDownload'),
+});
+
 /** @type {SessionAPI} */
 contextBridge.exposeInMainWorld('sessionAPI', {
   detectShells: () => ipcRenderer.invoke('session:detectShells'),

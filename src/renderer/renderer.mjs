@@ -114,6 +114,8 @@ function populateFonts() {
 const THEME_KEY = 'nero-terminal:ui-theme';
 // Remembers the "open the default terminal at startup" preference.
 const AUTO_OPEN_KEY = 'nero-terminal:auto-open-default';
+// Remembers the "check for updates at startup" preference (default on).
+const UPDATE_CHECK_KEY = 'nero-terminal:update-check';
 /**
  * Apply the Bootstrap light/dark UI theme, swap the moon/sun icon, and ask the
  * main process to recolour the native title-bar overlay to match.
@@ -382,6 +384,38 @@ function reconnectLast() {
   startSession(lastProfile);
 }
 
+/** Show the bottom-right update toast offering a download. */
+function showUpdateToast(latest) {
+  const el = $('update-toast'); if (!el) return;
+  $('update-toast-msg').textContent = i18n.t('update.available', { ver: latest });
+  el.classList.add('show');
+}
+
+/** Hide the update toast. */
+function hideUpdateToast() {
+  const el = $('update-toast'); if (el) el.classList.remove('show');
+}
+
+/**
+ * Ask the main process to check GitHub for a newer release. On `manual` the
+ * result (up-to-date / failed) is shown inline next to the button; an available
+ * update always raises the toast. The app never downloads — see main/updater.js.
+ * @param {boolean} [manual]  true when triggered by the "Check now" button.
+ */
+async function runUpdateCheck(manual) {
+  const status = $('update-status');
+  if (manual && status) status.textContent = i18n.t('update.checking');
+  let r;
+  try { r = await window.updateAPI.check(); } catch (_) { r = { ok: false }; }
+  if (!r || !r.ok) { if (manual && status) status.textContent = i18n.t('update.failed'); return; }
+  if (r.updateAvailable) {
+    showUpdateToast(r.latest);
+    if (manual && status) status.textContent = '';
+  } else if (manual && status) {
+    status.textContent = i18n.t('update.uptodate', { ver: r.current });
+  }
+}
+
 /**
  * Apply the current appearance settings (font, cursor, scrollback, colour theme)
  * to the live persistent terminal immediately, without reopening the session —
@@ -485,6 +519,9 @@ async function init() {
   $('btn-close-settings').addEventListener('click', closeSettings);
   $('exit-toast-close').addEventListener('click', hideExitToast);
   $('exit-toast-reconnect').addEventListener('click', reconnectLast);
+  $('update-toast-close').addEventListener('click', hideUpdateToast);
+  $('update-toast-download').addEventListener('click', () => { window.updateAPI.openDownload(); hideUpdateToast(); });
+  $('btn-check-update').addEventListener('click', () => runUpdateCheck(true));
   $('btn-open').addEventListener('click', () => startSession());
   $('btn-quit').addEventListener('click', () => window.close());
   $('btn-browse').addEventListener('click', async () => { const d = await window.sessionAPI.browseDir(); if (d) $('cwd').value = d; });
@@ -523,6 +560,14 @@ async function init() {
     try { localStorage.setItem(AUTO_OPEN_KEY, $('auto-open-default').checked ? 'true' : 'false'); } catch (_) {}
   });
 
+  // "check for updates at startup" toggle: restore (default on) + persist
+  let updateCheck = true;
+  try { updateCheck = localStorage.getItem(UPDATE_CHECK_KEY) !== 'false'; } catch (_) {}
+  $('update-check-enabled').checked = updateCheck;
+  $('update-check-enabled').addEventListener('change', () => {
+    try { localStorage.setItem(UPDATE_CHECK_KEY, $('update-check-enabled').checked ? 'true' : 'false'); } catch (_) {}
+  });
+
   // async population (must not break the handlers above)
   try { shells = await window.sessionAPI.detectShells(); } catch (_) { shells = []; }
   $('shell').innerHTML = '';
@@ -544,6 +589,9 @@ async function init() {
     if (autoOpen && shells.length) await startDefaultSession();
     else openSettings();   // Tera Term style: show the dialog over the blank terminal
   }
+
+  // startup update check (check-and-notify only), deferred so it never blocks UI
+  if (updateCheck) setTimeout(() => { runUpdateCheck(false); }, 2500);
 }
 
 // Re-label dynamically-generated option text after a language change.
