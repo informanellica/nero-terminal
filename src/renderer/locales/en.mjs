@@ -85,5 +85,6 @@ export default {
   'errors.profile_not_found': 'Saved session not found: {name}',
   'msg.saved': 'Saved "{name}"',
   'msg.disconnected': 'Session disconnected',
+  'msg.reconnect': 'Reconnect',
   'tag.local': '(local)',
 };

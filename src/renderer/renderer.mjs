@@ -59,6 +59,7 @@ let shells = [];
 let view = null;   // persistent terminal
 let conn = null;   // current session wiring
 let activeLabel = '';   // label of the current session (for the "(inactive)" marker)
+let lastProfile = null; // last connected profile snapshot (for toast "Reconnect")
 
 // ---- monospace font picker (only list fonts actually installed) -----------
 const DEFAULT_FONT = 'Cascadia Mono, Consolas, monospace';
@@ -300,11 +301,13 @@ function resolveLaunch(p) {
  * (font / theme / scrollback / cursor) and resets the screen, buffers early
  * output until the view is ready, then pipes `terminalAPI` ⇄ the view and closes
  * the overlay. Validation / connection errors are shown inline via {@link flash}.
+ * @param {object} [profileOverride]  reconnect with this saved snapshot instead
+ *   of reading the form (used by the disconnect toast's "Reconnect" button).
  * @returns {Promise<void>}
  */
-async function startSession() {
+async function startSession(profileOverride) {
   flash('', false);
-  const p = formToProfile();
+  const p = profileOverride || formToProfile();
   let l; try { l = resolveLaunch(p); } catch (e) { return flash(e.message, true); }
 
   // tear down any previous session
@@ -332,6 +335,7 @@ async function startSession() {
 
   closeSettings();
   activeLabel = l.label;
+  lastProfile = p;
   hideExitToast();
   $('tb-session').textContent = '— ' + l.label;
   view.fit();
@@ -369,6 +373,13 @@ function showExitToast(msg) {
 /** Hide the disconnect toast. */
 function hideExitToast() {
   const el = $('exit-toast'); if (el) el.classList.remove('show');
+}
+
+/** Reconnect to the last session (from the disconnect toast). */
+function reconnectLast() {
+  if (!lastProfile) return;
+  hideExitToast();
+  startSession(lastProfile);
 }
 
 /**
@@ -473,7 +484,8 @@ async function init() {
   $('btn-settings').addEventListener('click', openSettings);
   $('btn-close-settings').addEventListener('click', closeSettings);
   $('exit-toast-close').addEventListener('click', hideExitToast);
-  $('btn-open').addEventListener('click', startSession);
+  $('exit-toast-reconnect').addEventListener('click', reconnectLast);
+  $('btn-open').addEventListener('click', () => startSession());
   $('btn-quit').addEventListener('click', () => window.close());
   $('btn-browse').addEventListener('click', async () => { const d = await window.sessionAPI.browseDir(); if (d) $('cwd').value = d; });
   $('btn-browse-key').addEventListener('click', async () => { const k = await window.sessionAPI.browseKey(); if (k) $('key-path').value = k; });

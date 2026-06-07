@@ -85,5 +85,6 @@ export default {
   'errors.profile_not_found': '保存済みセッションが見つかりません: {name}',
   'msg.saved': '「{name}」を保存しました',
   'msg.disconnected': 'セッションが切断されました',
+  'msg.reconnect': '再接続',
   'tag.local': '（ローカル）',
 };

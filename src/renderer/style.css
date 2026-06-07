@@ -62,6 +62,12 @@ fieldset .legend { width: auto; padding: 0 6px; margin-bottom: 0; }
   background: #8a1c1c; color: #fff; border-radius: 8px; font-size: 13px;
 }
 .exit-toast.show { display: flex; }
+.exit-toast .exit-toast-reconnect {
+  margin-left: 8px; padding: 3px 10px; border: 1px solid rgba(255, 255, 255, .6);
+  background: rgba(255, 255, 255, .12); color: #fff; border-radius: 6px;
+  font-size: 12px; line-height: 1.4; cursor: pointer; white-space: nowrap;
+}
+.exit-toast .exit-toast-reconnect:hover { background: rgba(255, 255, 255, .25); }
 .exit-toast .exit-toast-close {
   margin-left: 4px; padding: 0 4px; border: 0; background: transparent;
   color: #fff; font-size: 20px; line-height: 1; cursor: pointer;
