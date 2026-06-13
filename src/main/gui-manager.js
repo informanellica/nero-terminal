@@ -1,20 +1,19 @@
 'use strict';
 
 /**
- * @file GUI session manager (main process) — owns the `gui:*` IPC surface for
- * the internal GUI display and bridges a {@link GuiSession} to whichever
- * renderer surface should show it:
+ * @file GUI session manager (main process). Bridges one {@link GuiSession} to a
+ * renderer surface:
  *
  * - the MAIN window's GraphicsPane (settings "GUI" panel: remote browser / X11
  *   desktop), or
- * - a dedicated POPUP window for "internal X11 forwarding": when an SSH session
- *   is opened with x11 mode = internal, a virtual X display (Xvfb + x11vnc) is
- *   started on the remote, the shell's DISPLAY is pointed at it, and a popup
- *   renders it — so any X11 app the user runs in the terminal appears in-app
- *   with no external X server (VcXsrv).
+ * - SEAMLESS per-window popups for "internal X11 forwarding": an SSH session
+ *   opened with x11 mode = internal starts a remote Xvfb + x11vnc desktop (no
+ *   external X server), tracks each top-level X window, and shows EACH window in
+ *   its own popup (cropped from the shared framebuffer). The shell's DISPLAY is
+ *   preset at shell start (nothing is typed). A window appears only when an app
+ *   actually maps it; closing the app closes its popup.
  *
- * Frames are routed to the active target webContents; only one GUI session
- * exists at a time (opening another, or closing the SSH session, tears it down).
+ * Only one GUI session exists at a time.
  *
  * @module main/gui-manager
  */
@@ -23,132 +22,29 @@ const path = require('path');
 const { BrowserWindow, dialog } = require('electron');
 const { GuiSession } = require('../nero_modules/terminal/src/backend/gui-session');
 
-/**
- * @param {object} deps
- * @param {Electron.IpcMain} deps.ipcMain
- * @param {function(): (Electron.BrowserWindow|null)} deps.getWindow
- * @param {function(): object} deps.getActiveHost  returns the active backend host (SshHost/PtyHost) or null.
- * @returns {{ register: function(): void, close: function(): void, openInternalX11: function(object): Promise<object> }}
- */
 function createGuiManager({ ipcMain, getWindow, getActiveHost }) {
   /** @type {?GuiSession} */
   let session = null;
-  /** @type {?Electron.WebContents} */
+  /** @type {?Electron.WebContents} */  // main-window path target (graphics-pane)
   let targetWC = null;
-  /** @type {?Electron.BrowserWindow} */
-  let popup = null;
+  /** @type {Map<string,{popup:Electron.BrowserWindow, geom:object}>} */  // seamless popups
+  let winPopups = new Map();
 
-  function send(channel, payload) {
-    const wc = targetWC;
-    if (wc && !wc.isDestroyed()) wc.send(channel, payload);
+  function sendMain(channel, payload) {
+    if (targetWC && !targetWC.isDestroyed()) targetWC.send(channel, payload);
+  }
+
+  function closeSeamless() {
+    for (const { popup } of winPopups.values()) {
+      try { if (popup && !popup.isDestroyed()) popup.close(); } catch (_) {}
+    }
+    winPopups.clear();
   }
 
   function close() {
     if (session) { try { session.close(); } catch (_) {} session = null; }
     targetWC = null;
-    if (popup && !popup.isDestroyed()) { try { popup.close(); } catch (_) {} }
-    popup = null;
-  }
-
-  /** Open a GUI session shown in the MAIN window's GraphicsPane (settings panel). */
-  async function open(opts) {
-    const host = getActiveHost();
-    if (!host || !host.isSsh || !host.connection) return { ok: false, error: 'no-ssh-session' };
-    close();
-    const win = getWindow();
-    targetWC = win && win.webContents;
-    session = makeSession(host, opts);
-    const current = session;
-    wire(current);
-    try { await session.open(); return { ok: true }; }
-    catch (e) {
-      if (session === current) { try { session.close(); } catch (_) {} session = null; targetWC = null; }
-      return { ok: false, error: (e && e.message) || 'gui-open-failed' };
-    }
-  }
-
-  /**
-   * Start the "internal X11" GUI for an SSH session: a remote Xvfb desktop shown
-   * in a popup, with the shell's DISPLAY pointed at it. Called from main when an
-   * SSH session is opened with x11 mode = internal.
-   * @param {object} sshHost  the active SshHost (its shell receives `export DISPLAY=:N`).
-   * @returns {Promise<{ok:boolean, error?:string}>}
-   */
-  function openInternalX11(sshHost) {
-    if (!sshHost) return;
-    close();
-    const parent = getWindow();
-    // Hidden until an X app actually draws — see the frame handler below. This
-    // avoids a blank/annoying window appearing at connect (and on failure we
-    // never show it; we surface an error dialog instead).
-    popup = new BrowserWindow({
-      width: 1280, height: 760, parent: parent || undefined, show: false, backgroundColor: '#000',
-      title: 'nero-terminal — X11',
-      webPreferences: {
-        sandbox: false, contextIsolation: true,
-        preload: path.join(__dirname, 'preload.js'),
-      },
-    });
-    popup.removeMenu && popup.removeMenu();
-    const thisPopup = popup;
-    popup.loadFile(path.join(__dirname, '..', 'renderer', 'gui-popup.html'));
-    targetWC = popup.webContents;
-    popup.on('closed', () => { if (popup === thisPopup) { popup = null; close(); } });
-
-    const onError = (msg) => {
-      // The shell was deferred for internal mode; make sure it still opens (with
-      // no DISPLAY) so the terminal works even though the X display failed.
-      try { sshHost.startShell(); } catch (_) {}
-      // Never leave a hidden/blank popup around on failure; tell the user why.
-      if (popup === thisPopup && popup && !popup.isDestroyed() && !popup.isVisible()) close();
-      const detail = msg === 'x11-missing'
-        ? 'The remote host needs Xvfb and x11vnc (openbox recommended) for the in-app X11 display.\n'
-          + 'Install them, e.g.:\n  Debian/Ubuntu:  sudo apt install xvfb x11vnc openbox\n  Alpine:  apk add xvfb x11vnc openbox\n\n'
-          + 'リモートに Xvfb と x11vnc（openbox 推奨）が必要です。上記コマンドでインストールしてください。'
-        : 'Internal X11 display failed: ' + msg;
-      try { dialog.showMessageBox(parent || undefined, { type: 'warning', title: 'nero-terminal — X11', message: 'In-app X11 display unavailable', detail }); } catch (_) {}
-    };
-
-    // Start only once BOTH the SSH connection is authenticated (so exec/forwardOut
-    // work and host.connection exists) AND the popup has loaded (so the first VNC
-    // frame isn't lost — the request/ack backpressure would otherwise stall).
-    let popupLoaded = false;
-    let started = false;
-    const begin = () => {
-      if (started || !popupLoaded || !sshHost.ready || !sshHost.connection || popup !== thisPopup) return;
-      started = true;
-      session = makeSession(sshHost, { mode: 'x11', width: 1280, height: 720 });
-      const current = session;
-      let displaySet = false;
-      let frames = 0;
-      session.on('frame', (f) => {
-        if (session !== current) return;
-        send('gui:frame', f);
-        // Lazy reveal: the first frame is the empty desktop; show the window only
-        // once an X app actually draws (a later framebuffer update). The popup has
-        // been rendering/acking in the background, so it's current when shown.
-        frames++;
-        if (frames >= 2 && popup === thisPopup && popup && !popup.isDestroyed() && !popup.isVisible()) {
-          try { popup.show(); } catch (_) {}
-        }
-      });
-      session.on('stats', (s) => { if (session === current) send('gui:stats', s); });
-      session.on('state', (s) => {
-        if (session !== current) return;
-        send('gui:state', s);
-        // Start the (deferred) shell with DISPLAY=:N preset — nothing is typed
-        // into the terminal. Done once, when the virtual display is up.
-        if (s && s.state === 'running' && s.display != null && !displaySet) {
-          displaySet = true;
-          try { sshHost.startShell({ DISPLAY: `:${s.display}` }); } catch (_) {}
-        }
-        if (s && s.state === 'error') onError(s.message);
-      });
-      session.open().catch((e) => onError((e && e.message) || 'gui-open-failed'));
-    };
-    popup.webContents.once('did-finish-load', () => { popupLoaded = true; begin(); });
-    if (!sshHost.ready) sshHost.on('ready', () => begin());
-    begin();
+    closeSeamless();
   }
 
   function makeSession(host, opts) {
@@ -163,26 +59,136 @@ function createGuiManager({ ipcMain, getWindow, getActiveHost }) {
       extraArgs: opts && opts.extraArgs,
       command: opts && opts.command,
       encodings: opts && opts.encodings,
+      seamless: opts && opts.seamless,
     });
   }
 
-  function wire(current) {
-    session.on('frame', (f) => { if (session === current) send('gui:frame', f); });
-    session.on('state', (s) => { if (session === current) send('gui:state', s); });
-    session.on('stats', (s) => { if (session === current) send('gui:stats', s); });
+  /** GUI session shown in the MAIN window's GraphicsPane (settings panel). */
+  async function open(opts) {
+    const host = getActiveHost();
+    if (!host || !host.isSsh || !host.connection) return { ok: false, error: 'no-ssh-session' };
+    close();
+    const win = getWindow();
+    targetWC = win && win.webContents;
+    session = makeSession(host, opts);
+    const current = session;
+    session.on('frame', (f) => { if (session === current) sendMain('gui:frame', f); });
+    session.on('state', (s) => { if (session === current) sendMain('gui:state', s); });
+    session.on('stats', (s) => { if (session === current) sendMain('gui:stats', s); });
+    try { await session.open(); return { ok: true }; }
+    catch (e) {
+      if (session === current) { try { session.close(); } catch (_) {} session = null; targetWC = null; }
+      return { ok: false, error: (e && e.message) || 'gui-open-failed' };
+    }
+  }
+
+  /**
+   * Internal X11: seamless per-window popups. Starts a remote Xvfb desktop and
+   * shows each top-level window in its own cropped popup. Fire-and-forget.
+   * @param {object} sshHost  the active SshHost (its shell gets DISPLAY=:N at start).
+   */
+  function openInternalX11(sshHost) {
+    if (!sshHost) return;
+    close();
+    const parent = getWindow();
+    let started = false;
+    let displaySet = false;
+    let errored = false;
+
+    const showError = (msg) => {
+      try { sshHost.startShell(); } catch (_) {}     // ensure the terminal still works
+      if (errored) return; errored = true;
+      closeSeamless();
+      const detail = msg === 'x11-missing'
+        ? 'The remote host needs Xvfb, x11vnc and xdotool (openbox recommended) for the in-app X11 display.\n'
+          + 'Install them, e.g.:\n  Debian/Ubuntu:  sudo apt install xvfb x11vnc xdotool openbox\n  Alpine:  apk add xvfb x11vnc xdotool openbox\n\n'
+          + 'リモートに Xvfb / x11vnc / xdotool（openbox 推奨）が必要です。上記でインストールしてください。'
+        : 'Internal X11 display failed: ' + msg;
+      try { dialog.showMessageBox(parent || undefined, { type: 'warning', title: 'nero-terminal — X11', message: 'In-app X11 display unavailable', detail }); } catch (_) {}
+    };
+
+    const reconcile = (list) => {
+      const seen = new Set();
+      for (const w of (list || [])) {
+        seen.add(w.id);
+        const entry = winPopups.get(w.id);
+        if (!entry) {
+          const popup = new BrowserWindow({
+            width: Math.max(80, w.w), height: Math.max(60, w.h),
+            parent: parent || undefined, show: true, backgroundColor: '#000',
+            title: w.title || 'X11',
+            webPreferences: { sandbox: false, contextIsolation: true, preload: path.join(__dirname, 'preload.js') },
+          });
+          popup.removeMenu && popup.removeMenu();
+          popup.on('page-title-updated', (ev) => ev.preventDefault());   // keep the X window title
+          const e = { popup, geom: w };
+          winPopups.set(w.id, e);
+          popup.on('closed', () => { winPopups.delete(w.id); });
+          popup.loadFile(path.join(__dirname, '..', 'renderer', 'gui-popup.html'));
+          popup.webContents.once('did-finish-load', () => {
+            if (popup.isDestroyed()) return;
+            // Set the title AFTER load so the page's <title> doesn't override it.
+            try { popup.setTitle(e.geom.title || 'X11'); } catch (_) {}
+            popup.webContents.send('gui:geom', e.geom);
+            if (session) session.requestFull();   // so the new popup gets a full image
+          });
+        } else if (geomChanged(entry.geom, w)) {
+          entry.geom = w;
+          if (!entry.popup.isDestroyed()) {
+            try { entry.popup.setContentSize(Math.max(80, w.w), Math.max(60, w.h)); } catch (_) {}
+            if (w.title) { try { entry.popup.setTitle(w.title); } catch (_) {} }
+            entry.popup.webContents.send('gui:geom', w);
+          }
+        }
+      }
+      for (const [id, entry] of [...winPopups]) {
+        if (!seen.has(id)) { try { if (!entry.popup.isDestroyed()) entry.popup.close(); } catch (_) {} winPopups.delete(id); }
+      }
+    };
+
+    const begin = () => {
+      if (started || !sshHost.ready || !sshHost.connection) return;
+      started = true;
+      session = makeSession(sshHost, { mode: 'x11', seamless: true, width: 1280, height: 720 });
+      const current = session;
+      session.on('state', (s) => {
+        if (session !== current || !s) return;
+        if (s.state === 'running' && s.display != null && !displaySet) {
+          displaySet = true;
+          try { sshHost.startShell({ DISPLAY: `:${s.display}` }); } catch (_) {}
+        }
+        if (s.state === 'error') showError(s.message);
+        if (s.state === 'closed') closeSeamless();
+      });
+      session.on('frame', (f) => {
+        if (session !== current) return;
+        session.ackFrame(f.seq);   // ack centrally so the VNC stream keeps pumping
+        for (const { popup } of winPopups.values()) {
+          if (popup && !popup.isDestroyed()) popup.webContents.send('gui:frame', f);
+        }
+      });
+      session.on('windows', (list) => { if (session === current) reconcile(list); });
+      session.open().catch((e) => showError((e && e.message) || 'gui-open-failed'));
+    };
+
+    if (!sshHost.ready) sshHost.on('ready', () => begin());
+    begin();
   }
 
   function register() {
     ipcMain.handle('gui:open', (_e, opts) => open(opts || {}));
     ipcMain.handle('gui:close', () => { close(); return true; });
     ipcMain.handle('gui:navigate', (_e, url) => { if (session) session.navigate(url); return true; });
-    // Fire-and-forget hot paths (no invoke round-trip).
     ipcMain.on('gui:input', (_e, msg) => { if (session) session.input(msg); });
     ipcMain.on('gui:resize', (_e, d) => { if (session && d) session.resize(d.width, d.height, d.dpr); });
     ipcMain.on('gui:frame-ack', (_e, d) => { if (session && d) session.ackFrame(d.seq); });
   }
 
   return { register, close, openInternalX11 };
+}
+
+function geomChanged(a, b) {
+  return a.x !== b.x || a.y !== b.y || a.w !== b.w || a.h !== b.h || a.title !== b.title;
 }
 
 module.exports = { createGuiManager };

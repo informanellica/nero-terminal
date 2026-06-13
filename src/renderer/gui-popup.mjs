@@ -17,7 +17,10 @@ const wrap = $('pop-wrap');
 
 let backing = null;
 let backingCtx = null;
-let fit = { scale: 1, offsetX: 0, offsetY: 0, w: 1, h: 1 };
+let fit = { scale: 1, offsetX: 0, offsetY: 0, w: 1, h: 1, srcX: 0, srcY: 0 };
+// Seamless crop: this popup shows only its window's region {x,y,w,h} of the
+// shared framebuffer. Null = show the whole framebuffer.
+let crop = null;
 
 function ensureBacking(w, h) {
   if (!backing || backing.width !== w || backing.height !== h) {
@@ -35,24 +38,35 @@ function fitCanvas() {
 function draw() {
   if (!backing) return;
   const ctx = canvas.getContext('2d');
-  const scale = Math.min(canvas.width / backing.width, canvas.height / backing.height);
-  const dw = backing.width * scale, dh = backing.height * scale;
+  // Source rect = this window's region (crop) or the whole framebuffer.
+  let srcX = crop ? crop.x : 0;
+  let srcY = crop ? crop.y : 0;
+  let srcW = crop ? crop.w : backing.width;
+  let srcH = crop ? crop.h : backing.height;
+  // Clamp to the backing bounds (geom can briefly be ahead of the framebuffer).
+  srcX = Math.max(0, Math.min(srcX, backing.width - 1));
+  srcY = Math.max(0, Math.min(srcY, backing.height - 1));
+  srcW = Math.max(1, Math.min(srcW, backing.width - srcX));
+  srcH = Math.max(1, Math.min(srcH, backing.height - srcY));
+  const scale = Math.min(canvas.width / srcW, canvas.height / srcH);
+  const dw = srcW * scale, dh = srcH * scale;
   const ox = (canvas.width - dw) / 2, oy = (canvas.height - dh) / 2;
-  fit = { scale, offsetX: ox, offsetY: oy, w: backing.width, h: backing.height };
+  fit = { scale, offsetX: ox, offsetY: oy, w: srcW, h: srcH, srcX, srcY };
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(backing, ox, oy, dw, dh);
+  ctx.drawImage(backing, srcX, srcY, srcW, srcH, ox, oy, dw, dh);
 }
 
+/** client px -> ABSOLUTE framebuffer (Xvfb) coords, so input hits the right window. */
 function mapCoords(clientX, clientY) {
   if (!backing) return null;
   const rect = canvas.getBoundingClientRect();
   if (!rect.width || !rect.height) return null;
   const cx = (clientX - rect.left) * (canvas.width / rect.width);
   const cy = (clientY - rect.top) * (canvas.height / rect.height);
-  const x = (cx - fit.offsetX) / fit.scale;
-  const y = (cy - fit.offsetY) / fit.scale;
-  return { x: Math.max(0, Math.min(fit.w, x)), y: Math.max(0, Math.min(fit.h, y)) };
+  const lx = Math.max(0, Math.min(fit.w, (cx - fit.offsetX) / fit.scale));
+  const ly = Math.max(0, Math.min(fit.h, (cy - fit.offsetY) / fit.scale));
+  return { x: fit.srcX + lx, y: fit.srcY + ly };
 }
 
 let closed = false;
@@ -96,6 +110,9 @@ gui.onState((s) => {
 gui.onStats((s) => {
   if (s) $('pop-stats').textContent = `${fit.w}×${fit.h}  ${s.fps}fps  ${s.kbps}KB/s`;
 });
+
+// Seamless: our window's region within the shared framebuffer.
+if (gui.onGeom) gui.onGeom((g) => { if (g) { crop = g; fitCanvas(); draw(); } });
 
 new ResizeObserver(() => { fitCanvas(); draw(); }).observe(wrap);
 fitCanvas();

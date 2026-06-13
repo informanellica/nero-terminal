@@ -124,6 +124,8 @@ contextBridge.exposeInMainWorld('guiAPI', {
   onFrame: (cb) => { const h = (_e, f) => cb(f); ipcRenderer.on('gui:frame', h); return () => ipcRenderer.removeListener('gui:frame', h); },
   onState: (cb) => { const h = (_e, s) => cb(s); ipcRenderer.on('gui:state', h); return () => ipcRenderer.removeListener('gui:state', h); },
   onStats: (cb) => { const h = (_e, s) => cb(s); ipcRenderer.on('gui:stats', h); return () => ipcRenderer.removeListener('gui:stats', h); },
+  // Seamless: this popup's window region {x,y,w,h} within the shared framebuffer.
+  onGeom: (cb) => { const h = (_e, g) => cb(g); ipcRenderer.on('gui:geom', h); return () => ipcRenderer.removeListener('gui:geom', h); },
 });
 
 /** @type {SessionAPI} */
