@@ -20,7 +20,7 @@
  */
 
 const path = require('path');
-const { BrowserWindow } = require('electron');
+const { BrowserWindow, dialog } = require('electron');
 const { GuiSession } = require('../nero_modules/terminal/src/backend/gui-session');
 
 /**
@@ -78,8 +78,11 @@ function createGuiManager({ ipcMain, getWindow, getActiveHost }) {
     if (!sshHost) return;
     close();
     const parent = getWindow();
+    // Hidden until an X app actually draws — see the frame handler below. This
+    // avoids a blank/annoying window appearing at connect (and on failure we
+    // never show it; we surface an error dialog instead).
     popup = new BrowserWindow({
-      width: 1280, height: 760, parent: parent || undefined, show: true, backgroundColor: '#000',
+      width: 1280, height: 760, parent: parent || undefined, show: false, backgroundColor: '#000',
       title: 'nero-terminal — X11',
       webPreferences: {
         sandbox: false, contextIsolation: true,
@@ -92,6 +95,17 @@ function createGuiManager({ ipcMain, getWindow, getActiveHost }) {
     targetWC = popup.webContents;
     popup.on('closed', () => { if (popup === thisPopup) { popup = null; close(); } });
 
+    const onError = (msg) => {
+      // Never leave a hidden/blank popup around on failure; tell the user why.
+      if (popup === thisPopup && popup && !popup.isDestroyed() && !popup.isVisible()) close();
+      const detail = msg === 'x11-missing'
+        ? 'The remote host needs Xvfb and x11vnc (openbox recommended) for the in-app X11 display.\n'
+          + 'Install them, e.g.:\n  Debian/Ubuntu:  sudo apt install xvfb x11vnc openbox\n  Alpine:  apk add xvfb x11vnc openbox\n\n'
+          + 'リモートに Xvfb と x11vnc（openbox 推奨）が必要です。上記コマンドでインストールしてください。'
+        : 'Internal X11 display failed: ' + msg;
+      try { dialog.showMessageBox(parent || undefined, { type: 'warning', title: 'nero-terminal — X11', message: 'In-app X11 display unavailable', detail }); } catch (_) {}
+    };
+
     // Start only once BOTH the SSH connection is authenticated (so exec/forwardOut
     // work and host.connection exists) AND the popup has loaded (so the first VNC
     // frame isn't lost — the request/ack backpressure would otherwise stall).
@@ -103,18 +117,32 @@ function createGuiManager({ ipcMain, getWindow, getActiveHost }) {
       session = makeSession(sshHost, { mode: 'x11', width: 1280, height: 720 });
       const current = session;
       let displaySet = false;
-      session.on('frame', (f) => { if (session === current) send('gui:frame', f); });
+      let frames = 0;
+      session.on('frame', (f) => {
+        if (session !== current) return;
+        send('gui:frame', f);
+        // Lazy reveal: the first frame is the empty desktop; show the window only
+        // once an X app actually draws (a later framebuffer update). The popup has
+        // been rendering/acking in the background, so it's current when shown.
+        frames++;
+        if (frames >= 2 && popup === thisPopup && popup && !popup.isDestroyed() && !popup.isVisible()) {
+          try { popup.show(); } catch (_) {}
+        }
+      });
       session.on('stats', (s) => { if (session === current) send('gui:stats', s); });
       session.on('state', (s) => {
         if (session !== current) return;
         send('gui:state', s);
-        // Point the interactive shell's DISPLAY at the virtual display, once.
+        // Point the interactive shell's DISPLAY at the virtual display, once. The
+        // leading newline starts a clean line even if MOTD/login output is still
+        // settling, so the export is not swallowed.
         if (s && s.state === 'running' && s.display != null && !displaySet) {
           displaySet = true;
-          try { sshHost.write(`export DISPLAY=:${s.display}\n`); } catch (_) {}
+          try { sshHost.write(`\nexport DISPLAY=:${s.display}\n`); } catch (_) {}
         }
+        if (s && s.state === 'error') onError(s.message);
       });
-      session.open().catch(() => { /* state:'error' already routed to the popup */ });
+      session.open().catch((e) => onError((e && e.message) || 'gui-open-failed'));
     };
     popup.webContents.once('did-finish-load', () => { popupLoaded = true; begin(); });
     if (!sshHost.ready) sshHost.on('ready', () => begin());
