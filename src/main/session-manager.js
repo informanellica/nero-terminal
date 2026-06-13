@@ -146,9 +146,12 @@ function detectShells() {
  * @param {function(): void} [deps.onSessionClose]
  *   Called whenever the active session is torn down (so a dependent GUI session
  *   can be closed too).
+ * @param {function(object): void} [deps.onInternalX11]
+ *   Called with the just-opened SshHost when a session uses x11 mode = internal
+ *   (so the host can start a remote Xvfb desktop and show it in-app).
  * @returns {SessionManager}
  */
-function createSessionManager({ app, ipcMain, dialog, getWindow, onProfilesChanged, onSessionClose }) {
+function createSessionManager({ app, ipcMain, dialog, getWindow, onProfilesChanged, onSessionClose, onInternalX11 }) {
   // active terminal-lib IPC bridge, or null
   /** @type {?{dispose: function(): void}} */
   let bridge = null;
@@ -197,11 +200,19 @@ function createSessionManager({ app, ipcMain, dialog, getWindow, onProfilesChang
         try { privateKey = fs.readFileSync(opts.keyPath); }
         catch (e) { throw new Error('Cannot read key file: ' + e.message); }
       }
+      // x11 mode: 'off' | 'external' (ssh X11 forwarding -> local X server) |
+      // 'internal' (remote Xvfb shown in-app, no external X server). Back-compat:
+      // a bare `x11: true` means external.
+      const x11Mode = opts.x11Mode || (opts.x11 ? 'external' : 'off');
       host = new SshHost({
         host: opts.host, port: opts.port || 22, username: opts.username,
         password: opts.password || undefined, privateKey, passphrase: opts.passphrase || undefined,
-        term: opts.term || 'xterm-256color', cols, rows, x11: !!opts.x11,
+        term: opts.term || 'xterm-256color', cols, rows, x11: x11Mode === 'external',
       });
+      if (x11Mode === 'internal' && onInternalX11) {
+        // Defer until the bridge is attached / connection is establishing.
+        setImmediate(() => { try { onInternalX11(host); } catch (_) {} });
+      }
     } else {
       const env = Object.assign({}, process.env);
       if (opts.env && typeof opts.env === 'object') Object.assign(env, opts.env);

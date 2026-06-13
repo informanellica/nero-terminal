@@ -39,6 +39,7 @@ const sessions = createSessionManager({
   getWindow: () => win,
   onProfilesChanged: () => setupJumpList(),
   onSessionClose: () => { if (gui) gui.close(); },
+  onInternalX11: (host) => { if (gui) gui.openInternalX11(host); },
 });
 sessions.register();
 

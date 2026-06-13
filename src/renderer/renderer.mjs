@@ -231,7 +231,7 @@ function formToProfile() {
     host: $('host').value.trim(), port: Number($('port').value) || 22,
     username: $('username').value.trim(), termType: $('term-type').value.trim() || 'xterm-256color',
     password: $('password').value, keyPath: $('key-path').value.trim(), passphrase: $('passphrase').value,
-    x11: $('x11-forward').checked,
+    x11Mode: $('x11-mode') ? $('x11-mode').value : 'off',
     shellId: $('shell').value, customShell: $('custom-shell').value, args: $('args').value, cwd: $('cwd').value,
     cols: Number($('cols').value) || 120, rows: Number($('rows').value) || 32,
     scrollback: Number($('scrollback').value) || 1000,
@@ -262,7 +262,7 @@ function applyProfile(p) {
   }
   $('font-size').value = p.fontSize || 14;
   $('cursor-style').value = p.cursorStyle || 'block'; $('cursor-blink').checked = !!p.cursorBlink;
-  if ($('x11-forward')) $('x11-forward').checked = !!p.x11;
+  if ($('x11-mode')) $('x11-mode').value = p.x11Mode || (p.x11 ? 'external' : 'off');
   if (p.theme && THEMES[p.theme]) $('theme').value = p.theme;
 }
 async function refreshProfiles(selectName) {
@@ -309,7 +309,7 @@ function resolveLaunch(p) {
   if (!p.host) throw new Error(i18n.t('errors.no_host'));
   return {
     type: 'ssh', host: p.host, port: p.port, username: p.username, term: p.termType,
-    password: p.password, keyPath: p.keyPath, passphrase: p.passphrase, x11: p.x11,
+    password: p.password, keyPath: p.keyPath, passphrase: p.passphrase, x11Mode: p.x11Mode,
     label: `${p.username ? p.username + '@' : ''}${p.host}:${p.port}`,
   };
 }
