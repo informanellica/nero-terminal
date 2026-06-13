@@ -232,8 +232,26 @@
             <button id="gui-open-browser" type="button" class="btn btn-sm btn-primary mt-1">
               <i class="bi bi-globe me-1"></i><span data-i18n="gui.open_browser">Open remote browser (Chromium)</span>
             </button>
+            <p class="text-secondary small mt-2 mb-0" data-i18n="gui.req_hint">Needs Chromium installed on the remote host.</p>
+
+            <h6 class="panel-title mt-3" data-i18n="gui.x11_title">X11 desktop (Xvfb)</h6>
+            <div class="row g-2 mb-2 align-items-center">
+              <label class="col-sm-4 col-form-label col-form-label-sm" for="gui-x11-command" data-i18n="gui.command">Application</label>
+              <div class="col-sm-8"><input id="gui-x11-command" class="form-control form-control-sm" value="xterm" autocomplete="off" /></div>
+            </div>
+            <div class="row g-2 mb-2 align-items-center">
+              <label class="col-sm-4 col-form-label col-form-label-sm" for="gui-x11-res" data-i18n="gui.resolution">Resolution</label>
+              <div class="col-sm-5"><select id="gui-x11-res" class="form-select form-select-sm">
+                <option value="1280x720" selected>1280 × 720</option>
+                <option value="1600x900">1600 × 900</option>
+                <option value="1920x1080">1920 × 1080</option>
+              </select></div>
+            </div>
+            <button id="gui-open-x11" type="button" class="btn btn-sm btn-primary mt-1">
+              <i class="bi bi-window-desktop me-1"></i><span data-i18n="gui.open_x11">Open X11 desktop (Xvfb)</span>
+            </button>
             <span id="gui-open-status" class="small text-body-secondary ms-2"></span>
-            <p class="text-secondary small mt-2 mb-0" data-i18n="gui.req_hint">Needs Chromium installed on the remote host. X11 desktop mode (Xvfb) arrives in a later release.</p>
+            <p class="text-secondary small mt-2 mb-0" data-i18n="gui.x11_hint">Needs Xvfb and x11vnc on the remote host (openbox recommended). Resolution is fixed per session.</p>
           </div>
         </section>
       </div>

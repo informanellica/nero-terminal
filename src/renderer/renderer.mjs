@@ -419,6 +419,22 @@ async function openGuiBrowser() {
   else { status.textContent = (r && r.error) || i18n.t('gui.state_error'); }
 }
 
+/**
+ * Open a generic X11 desktop (Xvfb + x11vnc on the remote, in-house RFB client)
+ * from the settings "GUI" panel and launch the chosen X11 application onto it.
+ */
+async function openGuiX11() {
+  const status = $('gui-open-status');
+  status.textContent = i18n.t('gui.state_starting');
+  const m = /^(\d+)x(\d+)$/.exec($('gui-x11-res').value) || [null, '1280', '720'];
+  const r = await guiController.openX11({
+    command: $('gui-x11-command').value.trim() || 'xterm',
+    width: Number(m[1]), height: Number(m[2]),
+  });
+  if (r && r.ok) { status.textContent = ''; closeSettings(); }
+  else { status.textContent = (r && r.error) || i18n.t('gui.state_error'); }
+}
+
 /** Show the bottom-right update toast offering a download. */
 function showUpdateToast(latest) {
   const el = $('update-toast'); if (!el) return;
@@ -558,6 +574,7 @@ async function init() {
   $('update-toast-download').addEventListener('click', () => { window.updateAPI.openDownload(); hideUpdateToast(); });
   $('btn-check-update').addEventListener('click', () => runUpdateCheck(true));
   $('gui-open-browser').addEventListener('click', openGuiBrowser);
+  $('gui-open-x11').addEventListener('click', openGuiX11);
   $('gui-disconnect').addEventListener('click', () => guiController.close());
   $('gui-go').addEventListener('click', () => { const u = $('gui-url').value.trim(); if (u) window.guiAPI.navigate(u); });
   $('gui-url').addEventListener('keydown', (e) => { if (e.key === 'Enter') { const u = $('gui-url').value.trim(); if (u) window.guiAPI.navigate(u); } });

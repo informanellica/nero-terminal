@@ -45,6 +45,8 @@ function createGuiManager({ ipcMain, getWindow, getActiveHost }) {
       maxFps: opts && opts.maxFps,
       url: opts && opts.url,
       extraArgs: opts && opts.extraArgs,
+      command: opts && opts.command,
+      encodings: opts && opts.encodings,
     });
     const current = session;
     session.on('frame', (f) => { if (session === current) send('gui:frame', f); });
