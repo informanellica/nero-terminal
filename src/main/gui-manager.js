@@ -35,8 +35,9 @@ function createGuiManager({ ipcMain, getWindow, getActiveHost }) {
   }
 
   function closeSeamless() {
-    for (const { popup } of winPopups.values()) {
-      try { if (popup && !popup.isDestroyed()) popup.close(); } catch (_) {}
+    for (const entry of winPopups.values()) {
+      entry.closing = true;   // our teardown — don't try to close the (gone) remote window
+      try { if (entry.popup && !entry.popup.isDestroyed()) entry.popup.close(); } catch (_) {}
     }
     winPopups.clear();
   }
@@ -107,10 +108,16 @@ function createGuiManager({ ipcMain, getWindow, getActiveHost }) {
       try { dialog.showMessageBox(parent || undefined, { type: 'warning', title: 'nero-terminal — X11', message: 'In-app X11 display unavailable', detail }); } catch (_) {}
     };
 
+    // Ids the user just closed: suppress re-creating their popup while the app
+    // exits (otherwise the tracker re-detects the still-closing window and the
+    // popup "respawns").
+    const suppressed = new Set();
+
     const reconcile = (list) => {
       const seen = new Set();
       for (const w of (list || [])) {
         seen.add(w.id);
+        if (suppressed.has(w.id)) continue;
         const entry = winPopups.get(w.id);
         if (!entry) {
           const popup = new BrowserWindow({
@@ -121,9 +128,18 @@ function createGuiManager({ ipcMain, getWindow, getActiveHost }) {
           });
           popup.removeMenu && popup.removeMenu();
           popup.on('page-title-updated', (ev) => ev.preventDefault());   // keep the X window title
-          const e = { popup, geom: w };
+          const e = { popup, geom: w, closing: false };
           winPopups.set(w.id, e);
-          popup.on('closed', () => { winPopups.delete(w.id); });
+          popup.on('closed', () => {
+            winPopups.delete(w.id);
+            // User closed the window -> close the remote X window so the app exits
+            // (and its shell command finishes); suppress respawn while it closes.
+            if (!e.closing && session) {
+              suppressed.add(w.id);
+              setTimeout(() => suppressed.delete(w.id), 6000);
+              try { session.closeWindow(w.id); } catch (_) {}
+            }
+          });
           popup.loadFile(path.join(__dirname, '..', 'renderer', 'gui-popup.html'));
           popup.webContents.once('did-finish-load', () => {
             if (popup.isDestroyed()) return;
@@ -142,7 +158,11 @@ function createGuiManager({ ipcMain, getWindow, getActiveHost }) {
         }
       }
       for (const [id, entry] of [...winPopups]) {
-        if (!seen.has(id)) { try { if (!entry.popup.isDestroyed()) entry.popup.close(); } catch (_) {} winPopups.delete(id); }
+        if (!seen.has(id)) {
+          entry.closing = true;   // window vanished on its own — don't re-close it remotely
+          try { if (!entry.popup.isDestroyed()) entry.popup.close(); } catch (_) {}
+          winPopups.delete(id);
+        }
       }
     };
 

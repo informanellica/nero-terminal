@@ -107,15 +107,10 @@ gui.onState((s) => {
   else if (s.state === 'closed') window.close();
 });
 
-gui.onStats((s) => {
-  if (s) $('pop-stats').textContent = `${fit.w}×${fit.h}  ${s.fps}fps  ${s.kbps}KB/s`;
-});
-
 // Seamless: our window's region within the shared framebuffer.
 if (gui.onGeom) gui.onGeom((g) => { if (g) { crop = g; fitCanvas(); draw(); } });
 
 new ResizeObserver(() => { fitCanvas(); draw(); }).observe(wrap);
 fitCanvas();
 
-$('pop-disconnect').addEventListener('click', () => window.close());
 window.addEventListener('beforeunload', () => { closed = true; try { router.detach(); } catch (_) {} });

@@ -7,18 +7,8 @@
     :root { color-scheme: dark; }
     html, body { margin: 0; height: 100%; background: #000; color: #ddd; font-family: system-ui, sans-serif; overflow: hidden; }
     body { display: flex; flex-direction: column; }
-    #pop-toolbar {
-      flex: 0 0 auto; display: flex; align-items: center; gap: 8px;
-      padding: 4px 8px; background: #1e1e1e; border-bottom: 1px solid #333; font-size: 12px;
-    }
-    #pop-title { font-weight: 600; }
-    #pop-spacer { flex: 1 1 auto; }
-    #pop-stats { color: #9aa; font-variant-numeric: tabular-nums; }
-    #pop-disconnect {
-      padding: 2px 10px; border: 1px solid #b3434b; background: transparent; color: #ff8a90;
-      border-radius: 6px; cursor: pointer; font-size: 12px;
-    }
-    #pop-disconnect:hover { background: rgba(179,67,75,.2); }
+    /* The window IS the remote app — no in-app chrome; the native title bar shows
+       the X window's title and its close button closes the app. */
     #pop-wrap { flex: 1 1 auto; min-height: 0; position: relative; display: flex; align-items: center; justify-content: center; background: #000; overflow: hidden; }
     #pop-canvas { max-width: 100%; max-height: 100%; outline: none; }
     #pop-overlay {
@@ -29,13 +19,6 @@
   </style>
 </head>
 <body>
-  <div id="pop-toolbar">
-    <span id="pop-title">X11</span>
-    <span id="pop-hint" style="color:#789">— click to capture · Ctrl+] to release</span>
-    <span id="pop-spacer"></span>
-    <span id="pop-stats"></span>
-    <button id="pop-disconnect" type="button">Disconnect</button>
-  </div>
   <div id="pop-wrap">
     <canvas id="pop-canvas" tabindex="0"></canvas>
     <div id="pop-overlay">Starting…</div>
