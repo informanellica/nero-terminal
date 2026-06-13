@@ -23,6 +23,23 @@
   <!-- The terminal: always present (created once), so it always renders -->
   <div id="terminal"></div>
 
+  <!-- Internal GUI display: hidden until a GUI session runs. Overlays the
+       terminal area; the shell session keeps running underneath. -->
+  <div id="gui-pane" class="d-none">
+    <div id="gui-toolbar">
+      <input id="gui-url" class="form-control form-control-sm" placeholder="https://example.com" data-i18n-placeholder="gui.url" autocomplete="off" />
+      <button id="gui-go" type="button" class="btn btn-sm btn-outline-light" data-i18n="gui.go">Go</button>
+      <span id="gui-capture-ind" class="gui-ind" title="" data-i18n-title="gui.hint_escape"></span>
+      <span class="gui-spacer"></span>
+      <span id="gui-stats" class="gui-stats"></span>
+      <button id="gui-disconnect" type="button" class="btn btn-sm btn-outline-danger" data-i18n="gui.disconnect">Disconnect</button>
+    </div>
+    <div id="gui-canvas-wrap">
+      <canvas id="gui-canvas" tabindex="0"></canvas>
+      <div id="gui-overlay" class="gui-overlay"></div>
+    </div>
+  </div>
+
   <!-- Session configuration: a dialog over the terminal (Tera Term style) -->
   <div id="settings-overlay" class="d-none">
     <div class="settings-dialog card shadow-lg">
@@ -42,6 +59,7 @@
             <li class="cat" data-cat="connection" data-i18n="cat.connection"><i class="bi bi-diagram-3 me-1"></i>Connection</li>
             <li class="cat sub" data-cat="data" data-i18n="cat.data">Data</li>
             <li class="cat sub" data-cat="ssh" data-i18n="cat.ssh">SSH</li>
+            <li class="cat" data-cat="gui" data-i18n="cat.gui"><i class="bi bi-window-desktop me-1"></i>GUI</li>
           </ul>
           <div class="mt-auto">
             <label class="form-label small text-secondary mb-1" data-i18n="saved.label">Saved Sessions</label>
@@ -196,6 +214,26 @@
               <label class="form-check-label" for="x11-forward" data-i18n="ssh.x11">Enable X11 forwarding</label>
             </div>
             <p class="text-secondary small mt-1 mb-0" data-i18n="ssh.x11_hint">Forwards remote X11 apps to a local X server (e.g. VcXsrv on DISPLAY :0 / port 6000).</p>
+          </div>
+
+          <div class="cat-panel" data-cat="gui" hidden>
+            <h6 class="panel-title" data-i18n="gui.title">Internal GUI display (no external X server)</h6>
+            <p class="text-secondary small" data-i18n="gui.intro">Render a remote GUI inside the app over the active SSH connection. Requires an SSH session to be connected first.</p>
+            <div class="row g-2 mb-2 align-items-center">
+              <label class="col-sm-4 col-form-label col-form-label-sm" for="gui-open-url" data-i18n="gui.url">URL</label>
+              <div class="col-sm-8"><input id="gui-open-url" class="form-control form-control-sm" placeholder="https://example.com" value="about:blank" autocomplete="off" /></div>
+            </div>
+            <div class="row g-2 mb-2 align-items-center">
+              <label class="col-sm-4 col-form-label col-form-label-sm" for="gui-quality" data-i18n="gui.quality">Quality</label>
+              <div class="col-sm-4"><select id="gui-quality" class="form-select form-select-sm">
+                <option value="30">30</option><option value="60" selected>60</option><option value="80">80</option>
+              </select></div>
+            </div>
+            <button id="gui-open-browser" type="button" class="btn btn-sm btn-primary mt-1">
+              <i class="bi bi-globe me-1"></i><span data-i18n="gui.open_browser">Open remote browser (Chromium)</span>
+            </button>
+            <span id="gui-open-status" class="small text-body-secondary ms-2"></span>
+            <p class="text-secondary small mt-2 mb-0" data-i18n="gui.req_hint">Needs Chromium installed on the remote host. X11 desktop mode (Xvfb) arrives in a later release.</p>
           </div>
         </section>
       </div>

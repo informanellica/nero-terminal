@@ -143,9 +143,12 @@ function detectShells() {
  * @param {function(): (Electron.BrowserWindow|null)} deps.getWindow  Returns the target window.
  * @param {function(Array<SessionProfile>): void} [deps.onProfilesChanged]
  *   Called with the new list whenever saved profiles change (to refresh the jump list).
+ * @param {function(): void} [deps.onSessionClose]
+ *   Called whenever the active session is torn down (so a dependent GUI session
+ *   can be closed too).
  * @returns {SessionManager}
  */
-function createSessionManager({ app, ipcMain, dialog, getWindow, onProfilesChanged }) {
+function createSessionManager({ app, ipcMain, dialog, getWindow, onProfilesChanged, onSessionClose }) {
   // active terminal-lib IPC bridge, or null
   /** @type {?{dispose: function(): void}} */
   let bridge = null;
@@ -165,6 +168,7 @@ function createSessionManager({ app, ipcMain, dialog, getWindow, onProfilesChang
 
   /** Dispose the active session — the IPC bridge and its backend host, if any. */
   function closeSession() {
+    if (onSessionClose) { try { onSessionClose(); } catch (_) {} }
     if (bridge) { bridge.dispose(); bridge = null; }
     host = null;
   }
@@ -250,7 +254,7 @@ function createSessionManager({ app, ipcMain, dialog, getWindow, onProfilesChang
     });
   }
 
-  return { register, openSession, closeSession, detectShells, loadProfiles };
+  return { register, openSession, closeSession, detectShells, loadProfiles, getActiveHost: () => host };
 }
 
 /**

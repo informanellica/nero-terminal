@@ -1,6 +1,6 @@
 {
   "name": "nero-terminal",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Nero - terminal emulator built with Electron (node-pty + xterm.js via nero-terminal-lib)",
   "main": "main/main.js",
   "scripts": {
@@ -32,7 +32,8 @@
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "node-pty": "^1.1.0",
-    "ssh2": "^1.17.0"
+    "ssh2": "^1.17.0",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "electron": "^33.4.11",

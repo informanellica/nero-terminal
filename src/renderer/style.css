@@ -29,6 +29,32 @@ body { margin: 0; overflow: hidden; display: flex; flex-direction: column; backg
 /* ===== terminal (always present, fills the area below the title bar) ===== */
 #terminal { flex: 1 1 auto; min-height: 0; padding: 4px; background: #000; }
 
+/* ===== internal GUI display (fills the same area when a GUI session runs) ===== */
+#gui-pane { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; background: #111; }
+#gui-pane.d-none { display: none !important; }
+#gui-toolbar {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
+  padding: 4px 6px; background: #1e1e1e; border-bottom: 1px solid #333;
+}
+#gui-toolbar #gui-url { flex: 1 1 auto; max-width: 520px; }
+#gui-toolbar .gui-spacer { flex: 1 1 auto; }
+#gui-toolbar .gui-stats { font-size: 11px; color: #9aa; font-variant-numeric: tabular-nums; }
+#gui-toolbar .gui-ind {
+  font-size: 11px; padding: 1px 6px; border-radius: 4px; white-space: nowrap;
+  background: #2b6cb0; color: #fff;
+}
+#gui-toolbar .gui-ind.off { background: #555; }
+#gui-canvas-wrap {
+  flex: 1 1 auto; min-height: 0; position: relative;
+  display: flex; align-items: center; justify-content: center; background: #000; overflow: hidden;
+}
+#gui-canvas { max-width: 100%; max-height: 100%; outline: none; cursor: default; image-rendering: auto; }
+.gui-overlay {
+  position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+  color: #ccc; font-size: 14px; background: rgba(0, 0, 0, 0.6); text-align: center; padding: 16px;
+}
+.gui-overlay.show { display: flex; }
+
 /* ===== settings overlay (a dialog over the terminal) ===== */
 #settings-overlay {
   position: fixed; inset: 0; z-index: 1000;

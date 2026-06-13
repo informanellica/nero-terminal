@@ -99,6 +99,33 @@ contextBridge.exposeInMainWorld('updateAPI', {
   openDownload: () => ipcRenderer.invoke('update:openDownload'),
 });
 
+/**
+ * Internal GUI display (remote GUI rendered into an in-app canvas).
+ * @typedef {object} GuiAPI
+ * @property {function(object): Promise<{ok:boolean, error?:string}>} open
+ *   Start a GUI session: `{ mode:'chromium', url, width, height, quality?, maxFps?, extraArgs? }`.
+ * @property {function(): Promise<boolean>} close
+ * @property {function(string): Promise<boolean>} navigate  Chromium mode only.
+ * @property {function(object): void} input   Fire-and-forget pointer/key/text message.
+ * @property {function(number, number, number): void} resize  width, height, devicePixelRatio.
+ * @property {function(number): void} ackFrame  Confirm a painted frame (drives backpressure).
+ * @property {function(function(object): void): function(): void} onFrame  Subscribe to frames; returns an unsubscribe fn.
+ * @property {function(function(object): void): function(): void} onState
+ * @property {function(function(object): void): function(): void} onStats
+ */
+/** @type {GuiAPI} */
+contextBridge.exposeInMainWorld('guiAPI', {
+  open: (opts) => ipcRenderer.invoke('gui:open', opts),
+  close: () => ipcRenderer.invoke('gui:close'),
+  navigate: (url) => ipcRenderer.invoke('gui:navigate', url),
+  input: (msg) => ipcRenderer.send('gui:input', msg),
+  resize: (width, height, dpr) => ipcRenderer.send('gui:resize', { width, height, dpr }),
+  ackFrame: (seq) => ipcRenderer.send('gui:frame-ack', { seq }),
+  onFrame: (cb) => { const h = (_e, f) => cb(f); ipcRenderer.on('gui:frame', h); return () => ipcRenderer.removeListener('gui:frame', h); },
+  onState: (cb) => { const h = (_e, s) => cb(s); ipcRenderer.on('gui:state', h); return () => ipcRenderer.removeListener('gui:state', h); },
+  onStats: (cb) => { const h = (_e, s) => cb(s); ipcRenderer.on('gui:stats', h); return () => ipcRenderer.removeListener('gui:stats', h); },
+});
+
 /** @type {SessionAPI} */
 contextBridge.exposeInMainWorld('sessionAPI', {
   detectShells: () => ipcRenderer.invoke('session:detectShells'),

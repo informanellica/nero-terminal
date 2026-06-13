@@ -20,6 +20,7 @@
 
 import { TerminalView } from '../nero_modules/terminal/src/frontend/terminal-view.mjs';
 import { I18n } from '../nero_modules/i18n/src/i18n.mjs';
+import { createGuiController } from './graphics-pane.mjs';
 import en from './locales/en.mjs';
 import ja from './locales/ja.mjs';
 
@@ -60,6 +61,23 @@ let view = null;   // persistent terminal
 let conn = null;   // current session wiring
 let activeLabel = '';   // label of the current session (for the "(inactive)" marker)
 let lastProfile = null; // last connected profile snapshot (for toast "Reconnect")
+
+// Internal GUI display (remote browser/X11 rendered into an in-app canvas).
+// onShow/onHide swap the GUI pane in for the terminal area (the shell keeps running).
+const guiController = createGuiController({
+  i18n,
+  onShow: () => {
+    $('terminal').classList.add('d-none');
+    $('gui-pane').classList.remove('d-none');
+    $('tb-session').textContent = '— ' + i18n.t('gui.title_bar') + (activeLabel ? ` (${activeLabel})` : '');
+  },
+  onHide: () => {
+    $('gui-pane').classList.add('d-none');
+    $('terminal').classList.remove('d-none');
+    $('tb-session').textContent = activeLabel ? '— ' + activeLabel : '';
+    if (view) try { view.fit(); } catch (_) {}
+  },
+});
 
 // ---- monospace font picker (only list fonts actually installed) -----------
 const DEFAULT_FONT = 'Cascadia Mono, Consolas, monospace';
@@ -384,6 +402,23 @@ function reconnectLast() {
   startSession(lastProfile);
 }
 
+/**
+ * Open the remote browser (Chromium) GUI from the settings "GUI" panel. Requires
+ * a live SSH session; reuses its connection. On success the GUI pane replaces the
+ * terminal and the settings dialog closes; on failure the reason is shown inline.
+ */
+async function openGuiBrowser() {
+  const status = $('gui-open-status');
+  status.textContent = i18n.t('gui.state_starting');
+  $('gui-url').value = $('gui-open-url').value.trim() || 'about:blank';
+  const r = await guiController.openBrowser({
+    url: $('gui-open-url').value.trim() || 'about:blank',
+    quality: $('gui-quality').value,
+  });
+  if (r && r.ok) { status.textContent = ''; closeSettings(); }
+  else { status.textContent = (r && r.error) || i18n.t('gui.state_error'); }
+}
+
 /** Show the bottom-right update toast offering a download. */
 function showUpdateToast(latest) {
   const el = $('update-toast'); if (!el) return;
@@ -522,6 +557,10 @@ async function init() {
   $('update-toast-close').addEventListener('click', hideUpdateToast);
   $('update-toast-download').addEventListener('click', () => { window.updateAPI.openDownload(); hideUpdateToast(); });
   $('btn-check-update').addEventListener('click', () => runUpdateCheck(true));
+  $('gui-open-browser').addEventListener('click', openGuiBrowser);
+  $('gui-disconnect').addEventListener('click', () => guiController.close());
+  $('gui-go').addEventListener('click', () => { const u = $('gui-url').value.trim(); if (u) window.guiAPI.navigate(u); });
+  $('gui-url').addEventListener('keydown', (e) => { if (e.key === 'Enter') { const u = $('gui-url').value.trim(); if (u) window.guiAPI.navigate(u); } });
   $('btn-open').addEventListener('click', () => startSession());
   $('btn-quit').addEventListener('click', () => window.close());
   $('btn-browse').addEventListener('click', async () => { const d = await window.sessionAPI.browseDir(); if (d) $('cwd').value = d; });

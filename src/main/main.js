@@ -22,6 +22,7 @@ const { app, ipcMain, dialog, Menu } = require('electron');
 const { createWindow, runApp, loadBuildInfo, formatTitle } = require('../nero_modules/electron');
 const { createSessionManager, buildJumpList } = require('./session-manager');
 const { registerUpdater } = require('./updater');
+const { createGuiManager } = require('./gui-manager');
 
 /**
  * The single application window, or `null` before creation / after it closes.
@@ -37,8 +38,17 @@ const sessions = createSessionManager({
   app, ipcMain, dialog,
   getWindow: () => win,
   onProfilesChanged: () => setupJumpList(),
+  onSessionClose: () => { if (gui) gui.close(); },
 });
 sessions.register();
+
+// Internal GUI display (Chromium/CDP over the active SSH connection; see ./gui-manager).
+const gui = createGuiManager({
+  ipcMain,
+  getWindow: () => win,
+  getActiveHost: () => sessions.getActiveHost(),
+});
+gui.register();
 
 // Update checker (check-and-notify only; see ./updater).
 registerUpdater({ ipcMain, app });
