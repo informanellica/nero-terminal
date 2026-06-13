@@ -2,7 +2,7 @@
   "name": "nero-terminal-vscode",
   "displayName": "nero-terminal",
   "description": "Open your saved nero-terminal SSH sessions as native VS Code terminals.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "informanellica",
   "license": "MIT",
   "engines": {
