@@ -208,6 +208,9 @@ function createSessionManager({ app, ipcMain, dialog, getWindow, onProfilesChang
         host: opts.host, port: opts.port || 22, username: opts.username,
         password: opts.password || undefined, privateKey, passphrase: opts.passphrase || undefined,
         term: opts.term || 'xterm-256color', cols, rows, x11: x11Mode === 'external',
+        // Internal mode opens the shell with DISPLAY preset once the virtual
+        // display is up (see gui-manager) — defer it instead of typing `export`.
+        deferShell: x11Mode === 'internal',
       });
       if (x11Mode === 'internal' && onInternalX11) {
         // Defer until the bridge is attached / connection is establishing.

@@ -96,6 +96,9 @@ function createGuiManager({ ipcMain, getWindow, getActiveHost }) {
     popup.on('closed', () => { if (popup === thisPopup) { popup = null; close(); } });
 
     const onError = (msg) => {
+      // The shell was deferred for internal mode; make sure it still opens (with
+      // no DISPLAY) so the terminal works even though the X display failed.
+      try { sshHost.startShell(); } catch (_) {}
       // Never leave a hidden/blank popup around on failure; tell the user why.
       if (popup === thisPopup && popup && !popup.isDestroyed() && !popup.isVisible()) close();
       const detail = msg === 'x11-missing'
@@ -133,12 +136,11 @@ function createGuiManager({ ipcMain, getWindow, getActiveHost }) {
       session.on('state', (s) => {
         if (session !== current) return;
         send('gui:state', s);
-        // Point the interactive shell's DISPLAY at the virtual display, once. The
-        // leading newline starts a clean line even if MOTD/login output is still
-        // settling, so the export is not swallowed.
+        // Start the (deferred) shell with DISPLAY=:N preset — nothing is typed
+        // into the terminal. Done once, when the virtual display is up.
         if (s && s.state === 'running' && s.display != null && !displaySet) {
           displaySet = true;
-          try { sshHost.write(`\nexport DISPLAY=:${s.display}\n`); } catch (_) {}
+          try { sshHost.startShell({ DISPLAY: `:${s.display}` }); } catch (_) {}
         }
         if (s && s.state === 'error') onError(s.message);
       });
