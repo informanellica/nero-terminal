@@ -59,11 +59,14 @@
             <li class="cat" data-cat="connection" data-i18n="cat.connection"><i class="bi bi-diagram-3 me-1"></i>Connection</li>
             <li class="cat sub" data-cat="data" data-i18n="cat.data">Data</li>
             <li class="cat sub" data-cat="ssh" data-i18n="cat.ssh">SSH</li>
-            <li class="cat" data-cat="gui" data-i18n="cat.gui"><i class="bi bi-window-desktop me-1"></i>GUI</li>
+            <!-- GUI category hidden for now: the extra nav row pushed "Saved
+                 Sessions" off the bottom of the dialog. Internal X11 is reached
+                 from the SSH panel's "X11 display" dropdown; the browser/X11-
+                 desktop launchers in the GUI panel are temporarily not exposed. -->
           </ul>
-          <div class="mt-auto">
+          <div class="cfg-saved mt-2">
             <label class="form-label small text-secondary mb-1" data-i18n="saved.label">Saved Sessions</label>
-            <select id="profile-list" class="form-select form-select-sm mb-1" size="5"></select>
+            <select id="profile-list" class="form-select form-select-sm mb-1" size="4"></select>
             <input id="profile-name" class="form-control form-control-sm mb-1" placeholder="Session name" data-i18n-placeholder="saved.name_ph" autocomplete="off" />
             <div class="btn-group btn-group-sm w-100">
               <button id="btn-load" type="button" class="btn btn-outline-secondary" title="Load" data-i18n-title="saved.load"><i class="bi bi-box-arrow-in-down"></i></button>

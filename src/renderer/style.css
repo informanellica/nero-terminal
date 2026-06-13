@@ -68,7 +68,11 @@ body { margin: 0; overflow: hidden; display: flex; flex-direction: column; backg
 }
 .settings-body { flex: 1 1 auto; display: flex; min-height: 0; overflow: hidden; }
 
-.cfg-nav { width: 190px; padding: 10px; border-right: 1px solid var(--bs-border-color); overflow: auto; }
+.cfg-nav { width: 190px; padding: 10px; border-right: 1px solid var(--bs-border-color); overflow: hidden; }
+/* Categories scroll if the window is short; the saved-sessions block stays
+   pinned at the bottom and is never clipped. */
+.cfg-nav .cat-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.cfg-nav .cfg-saved { flex: 0 0 auto; }
 .cat-list .cat { padding: 3px 8px; border-radius: 4px; cursor: pointer; user-select: none; white-space: nowrap; }
 .cat-list .cat.sub { padding-left: 24px; }
 .cat-list .cat:hover { background: var(--bs-secondary-bg); }
