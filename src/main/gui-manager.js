@@ -99,7 +99,10 @@ function createGuiManager({ ipcMain, getWindow, getActiveHost }) {
     const showError = (msg) => {
       try { sshHost.startShell(); } catch (_) {}     // ensure the terminal still works
       if (errored) return; errored = true;
-      closeSeamless();
+      // Tear down the GUI session too — VncBackend.close() stops the remote
+      // Xvfb/x11vnc (and runs the PID/port cleanup); closing only the popups
+      // would leak those remote processes on a startup failure.
+      close();
       const detail = msg === 'x11-missing'
         ? 'The remote host needs Xvfb, x11vnc and xdotool (openbox recommended) for the in-app X11 display.\n'
           + 'Install them, e.g.:\n  Debian/Ubuntu:  sudo apt install xvfb x11vnc xdotool openbox\n  Alpine:  apk add xvfb x11vnc xdotool openbox\n\n'
