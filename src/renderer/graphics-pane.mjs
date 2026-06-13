@@ -38,6 +38,7 @@ export function createGuiController({ i18n, onShow, onHide }) {
   let backing = null;       // OffscreenCanvas at the remote framebuffer size
   let backingCtx = null;
   let fit = { scale: 1, offsetX: 0, offsetY: 0, w: 1, h: 1 };
+  let captureHandler = null;   // pointerdown->capture listener on the (static) canvas
 
   const canvas = () => /** @type {HTMLCanvasElement} */ ($('gui-canvas'));
   const wrap = () => $('gui-canvas-wrap');
@@ -94,10 +95,12 @@ export function createGuiController({ i18n, onShow, onHide }) {
         }
       } else if (f.data) {
         const bmp = await createImageBitmap(new Blob([f.data], { type: 'image/jpeg' }));
+        if (!active) { if (bmp.close) bmp.close(); return; }   // lost the race to close()
         ensureBacking(bmp.width, bmp.height);
         backingCtx.drawImage(bmp, 0, 0);
         if (bmp.close) bmp.close();
       }
+      if (!active) return;
       draw();
     } catch (_) { /* skip a bad frame */ }
     gui.ackFrame(f.seq);   // confirm paint -> release next frame/delta
@@ -178,8 +181,11 @@ export function createGuiController({ i18n, onShow, onHide }) {
       canvas: c, send: (m) => gui.input(m), mapCoords, onEscape: () => setCapture(false),
     });
     router.attach();
-    // Clicking the canvas grabs keyboard capture; Ctrl+] releases it.
-    c.addEventListener('pointerdown', () => setCapture(true));
+    // Clicking the canvas grabs keyboard capture; Ctrl+] releases it. The canvas
+    // is a static element, so keep a reference and remove it in close() (else the
+    // listener accumulates one per open()).
+    captureHandler = () => setCapture(true);
+    c.addEventListener('pointerdown', captureHandler);
     setCapture(false);
 
     resizeObs = new ResizeObserver(scheduleResize);
@@ -210,6 +216,7 @@ export function createGuiController({ i18n, onShow, onHide }) {
     active = false;
     try { gui.close(); } catch (_) {}
     for (const off of offs.splice(0)) { try { off(); } catch (_) {} }
+    if (captureHandler) { try { canvas().removeEventListener('pointerdown', captureHandler); } catch (_) {} captureHandler = null; }
     if (router) { router.detach(); router = null; }
     if (resizeObs) { try { resizeObs.disconnect(); } catch (_) {} resizeObs = null; }
     if (resizeTimer) { clearTimeout(resizeTimer); resizeTimer = null; }
